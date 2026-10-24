@@ -116,3 +116,50 @@ curl -s http://localhost:8080/realms/hotel-realm/protocol/openid-connect/token \
 - Детермінований час: `BookingService` бере «сьогодні» з біна `Clock` (`configuration/ClockConfig`), у тестах — замоканий годинник.
 - Побічні ефекти перевіряються через `verify(...)` / `ArgumentCaptor` (`save`, `delete`, `updateEntity`, зміна статусу).
 - Доказ, що тести ловлять зламану логіку (AC4): `docs/lab2/mutation-check.md`.
+
+---
+
+# Лабораторна робота №3 (Анотації)
+
+Три кастомні анотації, кожна зі своїм механізмом.
+
+### Тип 1. Bean Validation constraint: `@ValidStayPeriod`
+
+`domain/annotation/ValidStayPeriod.java` + `domain/validation/StayPeriodValidator.java`
+
+Анотація рівня класу на `BookingCreateRequest`. Дата виїзду має бути пізніше дати заїзду, а тривалість —
+не більше `maxNights` ночей (атрибут, за замовчуванням 30). Валідатор підключається через
+`@Constraint(validatedBy = ...)` і працює з будь-яким DTO, що реалізує інтерфейс `StayPeriod`.
+Порушення прив'язане до поля `checkOut`, а повідомлення називає конкретні дати чи кількість ночей:
+
+```json
+{"status":400,"message":"Validation failed",
+ "fieldErrors":{"checkOut":"stay of 61 nights (2027-03-01 - 2027-05-01) exceeds the maximum of 30 nights"}}
+```
+
+Значення передаються як параметри повідомлення (`addMessageParameter`), а не конкатенацією в шаблон,
+щоб їх не можна було інтерпретувати як вирази.
+
+### Тип 2. Композитна анотація: `@PostCreated`
+
+`web/annotation/PostCreated.java` = `@RequestMapping(method = POST)` + `@ResponseStatus(HttpStatus.CREATED)`,
+шлях пробрасується через `@AliasFor`. Замінила пару `@PostMapping` + `@ResponseStatus(CREATED)` у
+`POST /api/hotels`, `POST /api/hotels/{id}/rooms`, `POST /api/bookings`.
+`@PostMapping` має `@Target(METHOD)`, тому мета-анотацією бути не може. `@PostCreated` побудована так само,
+як Spring будує сам `@PostMapping`.
+
+### Тип 3. Резолвер аргументів MVC: `@CurrentUsername`
+
+`web/annotation/CurrentUsername.java` + `web/CurrentUsernameArgumentResolver.java`, реєстрація у
+`configuration/WebConfig.java`. Підставляє в `String`-параметр ім'я автентифікованого користувача
+(`preferred_username` з JWT). `BookingController.create` і `myBookings` більше не приймають `Authentication`
+і не витягують ім'я вручну.
+
+### Тести
+
+| Тест | AC |
+|------|----|
+| `domain/validation/StayPeriodValidatorTest` | 1–3: валідатор знаходить сам Bean Validation; валідні періоди без порушень; точні повідомлення для «виїзд ≤ заїзд» і «> 30 ночей»; кастомний `maxNights` |
+| `controller/PostCreatedWebMvcTest` | 4–5: merged-атрибути `@PostCreated` = оригінальна пара; ендпоінт з оригінальними анотаціями й ендпоінт з `@PostCreated` однаково дають 201 на POST і 405 на GET; реальні `POST /api/hotels` і `/api/hotels/{id}/rooms` → 201 |
+| `web/CurrentUsernameArgumentResolverTest` | 6–7: `supportsParameter` true/false (без анотації, не `String`); `resolveArgument` повертає ім'я або кидає виняток без користувача |
+| `controller/BookingControllerWebMvcTest` | 8: реальний запит → резолвлене ім'я потрапляє в `bookingService.create(..., "bob")` / `listMine("bob")` і у відповідь; невалідний період → 400 з `fieldErrors.checkOut` |

@@ -6,13 +6,13 @@ import com.java.hotelbooking.domain.dto.RoomRequest;
 import com.java.hotelbooking.domain.dto.RoomResponse;
 import com.java.hotelbooking.service.HotelService;
 import com.java.hotelbooking.service.RoomService;
+import com.java.hotelbooking.web.annotation.PostCreated;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,8 +40,7 @@ public class HotelController {
         return hotelService.getById(id);
     }
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
+    @PostCreated
     public HotelResponse create(@Valid @RequestBody HotelRequest request) {
         return hotelService.create(request);
     }
@@ -62,8 +61,7 @@ public class HotelController {
         return roomService.listByHotel(hotelId);
     }
 
-    @PostMapping("/{hotelId}/rooms")
-    @ResponseStatus(HttpStatus.CREATED)
+    @PostCreated("/{hotelId}/rooms")
     public RoomResponse createRoom(@PathVariable Long hotelId, @Valid @RequestBody RoomRequest request) {
         return roomService.create(hotelId, request);
     }

@@ -39,21 +39,21 @@ class BookingControllerTest {
     }
 
     @Test
-    void create_passesUsernameFromAuthentication() {
+    void create_passesUsernameToService() {
         BookingCreateRequest request = new BookingCreateRequest(1L, LocalDate.of(2026, 11, 1),
                 LocalDate.of(2026, 11, 2), 1);
         BookingResponse expected = response(1L);
         when(bookingService.create(request, "bob")).thenReturn(expected);
 
-        assertThat(controller.create(request, bob)).isSameAs(expected);
+        assertThat(controller.create(request, "bob")).isSameAs(expected);
     }
 
     @Test
-    void myBookings_passesUsernameFromAuthentication() {
+    void myBookings_passesUsernameToService() {
         List<BookingResponse> expected = List.of(response(1L));
         when(bookingService.listMine("bob")).thenReturn(expected);
 
-        assertThat(controller.myBookings(bob)).isSameAs(expected);
+        assertThat(controller.myBookings("bob")).isSameAs(expected);
     }
 
     @Test
