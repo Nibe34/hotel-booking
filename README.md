@@ -239,3 +239,48 @@ curl -s http://localhost:8080/realms/hotel-realm/protocol/openid-connect/token \
   `LoggingAsyncUncaughtExceptionHandlerTest`, `IntegrationSimulationTest`.
 - Затримки в тестах керуються через `ControllableSlowCalls` (блокування / відпускання / бар'єр), без `Thread.sleep`.
 - Наживо: `http/lab5-async-demo.sh`.
+
+---
+
+# Лабораторна робота №6 (Quartz Scheduler)
+
+### Сховище розкладу
+
+- Схема `QRTZ_*` для PostgreSQL взята з `quartz.jar` (`org/quartz/impl/jdbcjobstore/tables_postgres.sql`) у
+  `db/quartz/tables_postgres.sql` (без `DROP`/`COMMIT`) і створюється changeset'ом `006-create-quartz-tables.xml`.
+- `spring.quartz.job-store-type: jdbc`, `jdbc.initialize-schema: never` (схемою володіє Liquibase),
+  `driverDelegateClass: PostgreSQLDelegate`, `overwrite-existing-jobs: true`: при кожному старті визначення з `QuartzConfig`
+  замінюють збережені, тож після деплою завдання не губляться і не дублюються (перевірено: після рестарту 3 тригери / 2 завдання).
+
+### Завдання (`job/*`, усі визначення в `configuration/QuartzConfig`)
+
+| Job | JobDataMap (за замовчуванням) | Тригери | Misfire |
+|-----|-------------------------------|---------|---------|
+| `ExpirePendingBookingsJob` — скасовує PENDING, які не підтвердили за `maxPendingMinutes` або в яких уже настав день заїзду; аудит від `system` + лист гостю | `maxPendingMinutes=1440`, `batchSize=100`, `maxRetries=2` | `expirePendingEvery5Minutes` (simple, 5 хв) | `NextWithRemainingCount`: пропущені запуски не наздоганяються, наступний обробить усе |
+| `CheckInReminderJob` — нагадування гостям CONFIRMED-бронювань за `daysBefore` днів до заїзду | `daysBefore=1`, `batchSize=100`, `maxRetries=0` | `checkInReminderDayBefore` (cron `0 0 18 * * ?`, Europe/Kyiv, перевизначає `maxRetries=1`) і `checkInReminderWeekBefore` (cron `0 0 10 * * ?`, Europe/Kyiv, перевизначає `daysBefore=7`, `batchSize=500`) | day-before: `FireAndProceed` (гість приїжджає завтра, надіслати якнайшвидше); week-before: `DoNothing` (необов'язкове, нагадування за день однаково прийде) |
+
+- Завдання «тонкі»: читають параметри (сетери `QuartzJobBean`) і роблять один виклик сервісу. Транзакція відкривається
+  на рівні сервісу (`BookingMaintenanceService.expirePendingBookings`, `CheckInReminderService.sendReminders`).
+- Обидва завдання мають `@DisallowConcurrentExecution`: запуск, що настав, поки попередній ще працює, чекає на нього.
+- **Ідемпотентність:** прострочене бронювання стає CANCELLED, тож повторний запуск його не знайде. Відправлені нагадування
+  записуються в `booking_reminders` (унікальність `booking_id + days_before`, changeset `007`).
+- **Збої (`JobFailurePolicy`):** поки `refireCount < maxRetries`, `JobExecutionException(refireImmediately=true)`;
+  потім ERROR у лог і очікування наступного запуску за розкладом. Кількість спроб обмежена, нескінченного циклу немає.
+- **Параметри:** відсутній або з помилкою написаний ключ ігнорується Quartz'ом, і діє задокументоване значення за замовчуванням
+  з полів job-класу. Значення неправильного типу (`batchSize="ten"`) валить запуск до виклику сервісу. Невалідне значення
+  (`maxPendingMinutes=0`) сервіс відхиляє явним `IllegalArgumentException`.
+
+Адмінські ендпоінти (ADMIN): `GET /api/admin/jobs` (розклад з БД, наступні запуски, дані тригерів),
+`POST /api/admin/jobs/expire-pending?maxPendingMinutes=`, `POST /api/admin/jobs/check-in-reminders?daysBefore=`
+(разовий запуск, параметри працюють як дані тригера).
+
+### Тести
+
+| Тест | Що перевіряє |
+|------|--------------|
+| `configuration/QuartzConfigTest` (без Spring) | імена/групи, тригер → `JobKey`, розклади, misfire-інструкції, часовий пояс `Europe/Kyiv` (і що невідомий id тихо стає GMT), злиття JobDataMap: тригер перемагає, решта з job |
+| `job/ExpirePendingBookingsJobTest`, `CheckInReminderJobTest` | один виклик сервісу з параметрами, значення за замовчуванням, прив'язка через справжній `QuartzJobBean.execute` (ключ з помилкою → default, неправильний тип → виняток), `@DisallowConcurrentExecution`, рішення про повтор |
+| `job/QuartzSchedulerBehaviourTest` | справжній in-memory планувальник Quartz: невдале завдання виконується рівно `maxRetries + 1` разів і зупиняється; другий запуск чекає, поки завершиться перший |
+| `service/JobServicesIntegrationTest` (`@DataJpaTest`, H2, кожен виклик у власній транзакції) | повторний запуск нічого не змінює (статуси, аудит, події), `batchSize`, вибір лише потрібних бронювань, нагадування за 1 і 7 днів незалежні |
+
+Наживо: `http/lab6-quartz-demo.sh`.

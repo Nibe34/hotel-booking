@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- QRTZ_* tables of the Quartz JDBC job store. Spring Boot must not create them (spring.quartz.jdbc.initialize-schema: never). -->
+    <changeSet id="006-create-quartz-tables" author="student" dbms="postgresql">
+        <sqlFile path="db/quartz/tables_postgres.sql"
+                 relativeToChangelogFile="false"
+                 splitStatements="true"
+                 endDelimiter=";"/>
+        <rollback>
+            <sql>
+                DROP TABLE IF EXISTS qrtz_fired_triggers, qrtz_paused_trigger_grps, qrtz_scheduler_state, qrtz_locks,
+                    qrtz_simple_triggers, qrtz_cron_triggers, qrtz_simprop_triggers, qrtz_blob_triggers,
+                    qrtz_triggers, qrtz_job_details, qrtz_calendars;
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

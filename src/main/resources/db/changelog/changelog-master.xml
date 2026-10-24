@@ -10,5 +10,7 @@
     <include file="changes/003-create-bookings.xml" relativeToChangelogFile="true"/>
     <include file="changes/004-seed-data.xml" relativeToChangelogFile="true"/>
     <include file="changes/005-create-booking-audit.xml" relativeToChangelogFile="true"/>
+    <include file="changes/006-create-quartz-tables.xml" relativeToChangelogFile="true"/>
+    <include file="changes/007-create-booking-reminders.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

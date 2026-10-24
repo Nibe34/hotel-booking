@@ -6,6 +6,7 @@ import com.java.hotelbooking.domain.enums.AuditAction;
 import com.java.hotelbooking.domain.enums.BookingStatus;
 import com.java.hotelbooking.domain.model.BookingAuditEntry;
 import com.java.hotelbooking.repository.BookingAuditRepository;
+import com.java.hotelbooking.service.AuditTrail;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.Signature;
 import org.junit.jupiter.api.AfterEach;
@@ -28,6 +29,7 @@ import java.time.ZoneOffset;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -50,7 +52,8 @@ class BookingAuditAspectTest {
 
     @BeforeEach
     void setUp() {
-        aspect = new BookingAuditAspect(auditRepository, Clock.fixed(NOW, ZoneOffset.UTC));
+        aspect = new BookingAuditAspect(new AuditTrail(auditRepository, Clock.fixed(NOW, ZoneOffset.UTC)));
+        lenient().when(auditRepository.save(any(BookingAuditEntry.class))).thenAnswer(inv -> inv.getArgument(0));
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.toShortString()).thenReturn("BookingService.confirm(..)");
     }

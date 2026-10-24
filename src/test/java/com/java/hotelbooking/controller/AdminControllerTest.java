@@ -2,7 +2,9 @@ package com.java.hotelbooking.controller;
 
 import com.java.hotelbooking.domain.dto.AdminStatsResponse;
 import com.java.hotelbooking.domain.dto.BookingAuditResponse;
+import com.java.hotelbooking.configuration.QuartzConfig;
 import com.java.hotelbooking.service.AdminService;
+import com.java.hotelbooking.service.ScheduledJobsService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -13,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -20,6 +23,9 @@ class AdminControllerTest {
 
     @Mock
     private AdminService adminService;
+
+    @Mock
+    private ScheduledJobsService scheduledJobsService;
 
     @InjectMocks
     private AdminController controller;
@@ -38,5 +44,28 @@ class AdminControllerTest {
         when(adminService.audit(4L)).thenReturn(expected);
 
         assertThat(controller.audit(4L)).isSameAs(expected);
+    }
+
+    @Test
+    void jobs_returnsTheSchedule() {
+        when(scheduledJobsService.listTriggers()).thenReturn(List.of());
+
+        assertThat(controller.jobs()).isEmpty();
+    }
+
+    @Test
+    void runExpirePending_passesOverrideOnlyWhenGiven() {
+        controller.runExpirePending(null);
+        controller.runExpirePending(5L);
+
+        verify(scheduledJobsService).runNow(QuartzConfig.EXPIRE_PENDING_JOB, Map.of());
+        verify(scheduledJobsService).runNow(QuartzConfig.EXPIRE_PENDING_JOB, Map.of("maxPendingMinutes", 5L));
+    }
+
+    @Test
+    void runCheckInReminders_passesDaysBeforeOverride() {
+        controller.runCheckInReminders(7);
+
+        verify(scheduledJobsService).runNow(QuartzConfig.CHECK_IN_REMINDER_JOB, Map.of("daysBefore", 7));
     }
 }
