@@ -90,3 +90,29 @@ JWT-клієнт.
 curl -s http://localhost:8080/realms/hotel-realm/protocol/openid-connect/token \
   -d grant_type=password -d client_id=hotel-app -d username=bob -d password=bob123
 ```
+
+---
+
+# Лабораторна робота №2 (Unit-тестування)
+
+```bash
+./mvnw test     # 108 unit-тестів + звіт JaCoCo: target/site/jacoco/index.html
+./mvnw verify   # те саме + перевірка порогу покриття (≥ 60% інструкцій, інакше збірка падає)
+```
+
+Тести не потребують Postgres/Keycloak: JUnit 5 + Mockito (`@Mock` / `@InjectMocks`), без Spring-контексту.
+Покриття: ~86% інструкцій, ~92% гілок; усі сервіси — 100%.
+
+| Тест-клас | Що перевіряє |
+|-----------|--------------|
+| `service/BookingServiceTest` | створення (ціна = ночі × ціна, межі 1/30 ночей, місткість, перетин дат), скасування (власник/адмін/чужий, до/в день заїзду, повторне), підтвердження, видалення |
+| `service/HotelServiceTest`, `RoomServiceTest` | фільтр за містом, унікальність назви в місті / номера в готелі, 404, пошук вільних номерів |
+| `service/AdminServiceTest` | статистика по всіх статусах |
+| `security/KeycloakRealmRoleConverterTest` | `realm_access.roles` → `ROLE_*`, відсутні/некоректні claims |
+| `exception/GlobalExceptionHandlerTest` | статуси 400/403/404/409, тіло `ApiError`, перша помилка на поле |
+| `domain/mapper/MapperImplTest` | згенеровані MapStruct-мапери (створюються через `new`) |
+| `controller/*Test` | делегування в сервіси, username з `Authentication` |
+
+- Детермінований час: `BookingService` бере «сьогодні» з біна `Clock` (`configuration/ClockConfig`), у тестах — замоканий годинник.
+- Побічні ефекти перевіряються через `verify(...)` / `ArgumentCaptor` (`save`, `delete`, `updateEntity`, зміна статусу).
+- Доказ, що тести ловлять зламану логіку (AC4): `docs/lab2/mutation-check.md`.
