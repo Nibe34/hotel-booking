@@ -6,6 +6,7 @@ import com.java.hotelbooking.domain.dto.BookingCreateRequest;
 import com.java.hotelbooking.domain.dto.BookingResponse;
 import com.java.hotelbooking.domain.enums.AuditAction;
 import com.java.hotelbooking.domain.enums.BookingStatus;
+import com.java.hotelbooking.domain.event.BookingChangedEvent;
 import com.java.hotelbooking.domain.mapper.BookingMapper;
 import com.java.hotelbooking.domain.model.Booking;
 import com.java.hotelbooking.domain.model.Room;
@@ -15,6 +16,7 @@ import com.java.hotelbooking.exception.NotFoundException;
 import com.java.hotelbooking.repository.BookingRepository;
 import com.java.hotelbooking.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -46,6 +48,7 @@ public class BookingService {
     private final RoomRepository roomRepository;
     private final BookingMapper bookingMapper;
     private final Clock clock;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     @PreAuthorize("hasRole('USER')")
@@ -79,7 +82,7 @@ public class BookingService {
         booking.setGuestsCount(request.guestsCount());
         booking.setTotalPrice(room.getPricePerNight().multiply(BigDecimal.valueOf(nights)));
         booking.setStatus(BookingStatus.PENDING);
-        return bookingMapper.toResponse(bookingRepository.save(booking));
+        return published(bookingMapper.toResponse(bookingRepository.save(booking)), AuditAction.CREATE);
     }
 
     @PreAuthorize("hasRole('USER')")
@@ -118,7 +121,7 @@ public class BookingService {
             throw new ConflictException("Booking can be cancelled only before the check-in date");
         }
         booking.setStatus(BookingStatus.CANCELLED);
-        return bookingMapper.toResponse(booking);
+        return published(bookingMapper.toResponse(booking), AuditAction.CANCEL);
     }
 
     @Transactional
@@ -131,7 +134,7 @@ public class BookingService {
                     + booking.getStatus());
         }
         booking.setStatus(BookingStatus.CONFIRMED);
-        return bookingMapper.toResponse(booking);
+        return published(bookingMapper.toResponse(booking), AuditAction.CONFIRM);
     }
 
     /**
@@ -154,6 +157,12 @@ public class BookingService {
     @PreAuthorize("hasRole('ADMIN')")
     public void delete(Long id) {
         bookingRepository.delete(findBooking(id));
+    }
+
+    // listeners (guest e-mail) run after the transaction commits, see BookingNotificationListener
+    private BookingResponse published(BookingResponse response, AuditAction action) {
+        eventPublisher.publishEvent(new BookingChangedEvent(response, action));
+        return response;
     }
 
     private Booking findBooking(Long id) {

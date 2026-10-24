@@ -85,6 +85,17 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void handleServiceBusy_returns503WithRetryAfterHeader() {
+        ResponseEntity<ApiError> response =
+                handler.handleServiceBusy(new ServiceBusyException("try again later", 5), request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+        assertThat(response.getHeaders().getFirst(HttpHeaders.RETRY_AFTER)).isEqualTo("5");
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("try again later");
+    }
+
+    @Test
     void handleAccessDenied_returns403WithPrefixedMessage() {
         ResponseEntity<ApiError> response =
                 handler.handleAccessDenied(new AccessDeniedException("You can cancel only your own bookings"), request);

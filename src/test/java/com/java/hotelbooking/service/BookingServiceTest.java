@@ -2,7 +2,9 @@ package com.java.hotelbooking.service;
 
 import com.java.hotelbooking.domain.dto.BookingCreateRequest;
 import com.java.hotelbooking.domain.dto.BookingResponse;
+import com.java.hotelbooking.domain.enums.AuditAction;
 import com.java.hotelbooking.domain.enums.BookingStatus;
+import com.java.hotelbooking.domain.event.BookingChangedEvent;
 import com.java.hotelbooking.domain.enums.RoomType;
 import com.java.hotelbooking.domain.mapper.BookingMapper;
 import com.java.hotelbooking.domain.model.Booking;
@@ -21,6 +23,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -60,6 +63,9 @@ class BookingServiceTest {
 
     @Mock
     private Clock clock;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private BookingService bookingService;
@@ -139,6 +145,7 @@ class BookingServiceTest {
         assertThat(saved.getTotalPrice()).isEqualByComparingTo("361.50");
         assertThat(result.status()).isEqualTo(BookingStatus.PENDING);
         assertThat(result.totalPrice()).isEqualByComparingTo("361.50");
+        verify(eventPublisher).publishEvent(new BookingChangedEvent(result, AuditAction.CREATE));
     }
 
     @ParameterizedTest
@@ -189,6 +196,7 @@ class BookingServiceTest {
                 .hasMessage("checkOut must be after checkIn");
         verify(roomRepository, never()).findByIdForUpdate(anyLong());
         verify(bookingRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -319,6 +327,7 @@ class BookingServiceTest {
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.CANCELLED);
         assertThat(result.status()).isEqualTo(BookingStatus.CANCELLED);
         verify(bookingMapper).toResponse(booking);
+        verify(eventPublisher).publishEvent(new BookingChangedEvent(result, AuditAction.CANCEL));
     }
 
     @Test
@@ -331,6 +340,7 @@ class BookingServiceTest {
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("Booking can be cancelled only before the check-in date");
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -399,6 +409,7 @@ class BookingServiceTest {
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
         assertThat(result.status()).isEqualTo(BookingStatus.CONFIRMED);
         verify(bookingMapper).toResponse(booking);
+        verify(eventPublisher).publishEvent(new BookingChangedEvent(result, AuditAction.CONFIRM));
     }
 
     @ParameterizedTest

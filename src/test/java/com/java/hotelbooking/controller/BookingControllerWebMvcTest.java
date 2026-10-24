@@ -3,6 +3,7 @@ package com.java.hotelbooking.controller;
 import com.java.hotelbooking.domain.dto.BookingCreateRequest;
 import com.java.hotelbooking.domain.dto.BookingResponse;
 import com.java.hotelbooking.domain.enums.BookingStatus;
+import com.java.hotelbooking.service.BookingDocumentService;
 import com.java.hotelbooking.service.BookingService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +57,9 @@ class BookingControllerWebMvcTest {
 
     @MockitoBean
     private BookingService bookingService;
+
+    @MockitoBean
+    private BookingDocumentService bookingDocumentService;
 
     private BookingResponse response(long id, String guest) {
         return new BookingResponse(id, 1L, "101", 1L, "Grand", guest, LocalDate.of(2099, 7, 1),
