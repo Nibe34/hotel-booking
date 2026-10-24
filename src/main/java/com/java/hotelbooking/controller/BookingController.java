@@ -2,7 +2,9 @@ package com.java.hotelbooking.controller;
 
 import com.java.hotelbooking.domain.annotation.Idempotent;
 import com.java.hotelbooking.domain.dto.BookingCreateRequest;
+import com.java.hotelbooking.domain.dto.BookingInvoiceResponse;
 import com.java.hotelbooking.domain.dto.BookingResponse;
+import com.java.hotelbooking.service.BookingDocumentService;
 import com.java.hotelbooking.service.BookingService;
 import com.java.hotelbooking.web.annotation.CurrentUsername;
 import com.java.hotelbooking.web.annotation.PostCreated;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,6 +30,7 @@ import java.util.List;
 public class BookingController {
 
     private final BookingService bookingService;
+    private final BookingDocumentService bookingDocumentService;
 
     @PostCreated
     @Idempotent
@@ -47,6 +51,11 @@ public class BookingController {
     @GetMapping("/{id}")
     public BookingResponse getById(@PathVariable Long id) {
         return bookingService.getById(id);
+    }
+
+    @GetMapping("/{id}/invoice")
+    public BookingInvoiceResponse invoice(@PathVariable Long id, @RequestParam(defaultValue = "UAH") String currency) {
+        return bookingDocumentService.invoice(id, currency);
     }
 
     @PatchMapping("/{id}/cancel")

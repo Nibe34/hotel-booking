@@ -20,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.aop.aspectj.annotation.AspectJProxyFactory;
 import org.springframework.aop.support.AopUtils;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -61,11 +62,15 @@ class SelfInvocationTest {
     @Mock
     private BookingAuditRepository auditRepository;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private BookingService proxy;
 
     @BeforeEach
     void setUp() {
-        BookingService target = new BookingService(bookingRepository, roomRepository, bookingMapper, CLOCK);
+        BookingService target = new BookingService(bookingRepository, roomRepository, bookingMapper, CLOCK,
+                eventPublisher);
         AspectJProxyFactory factory = new AspectJProxyFactory(target);
         factory.setProxyTargetClass(true);
         factory.addAspect(new BookingAuditAspect(auditRepository, CLOCK));

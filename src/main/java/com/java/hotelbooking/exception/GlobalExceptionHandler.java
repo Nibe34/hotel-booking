@@ -58,6 +58,14 @@ public class GlobalExceptionHandler {
                 .body(response.getBody());
     }
 
+    @ExceptionHandler(ServiceBusyException.class)
+    public ResponseEntity<ApiError> handleServiceBusy(ServiceBusyException ex, HttpServletRequest request) {
+        ResponseEntity<ApiError> response = build(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request, null);
+        return ResponseEntity.status(response.getStatusCode())
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+                .body(response.getBody());
+    }
+
     private ResponseEntity<ApiError> build(HttpStatus status, String message, HttpServletRequest request,
                                            Map<String, String> fieldErrors) {
         ApiError body = new ApiError(Instant.now(), status.value(), status.getReasonPhrase(), message,

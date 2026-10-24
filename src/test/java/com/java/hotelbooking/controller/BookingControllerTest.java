@@ -1,8 +1,10 @@
 package com.java.hotelbooking.controller;
 
 import com.java.hotelbooking.domain.dto.BookingCreateRequest;
+import com.java.hotelbooking.domain.dto.BookingInvoiceResponse;
 import com.java.hotelbooking.domain.dto.BookingResponse;
 import com.java.hotelbooking.domain.enums.BookingStatus;
+import com.java.hotelbooking.service.BookingDocumentService;
 import com.java.hotelbooking.service.BookingService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +28,9 @@ class BookingControllerTest {
 
     @Mock
     private BookingService bookingService;
+
+    @Mock
+    private BookingDocumentService bookingDocumentService;
 
     @InjectMocks
     private BookingController controller;
@@ -94,6 +99,15 @@ class BookingControllerTest {
         when(bookingService.confirmBatch(List.of(1L, 2L))).thenReturn(expected);
 
         assertThat(controller.confirmBatch(List.of(1L, 2L))).isSameAs(expected);
+    }
+
+    @Test
+    void invoice_delegatesIdAndCurrencyToDocumentService() {
+        BookingInvoiceResponse expected = new BookingInvoiceResponse(1L, "INV-000001", 120,
+                new BigDecimal("100.00"), "USD", new BigDecimal("2.41"), null);
+        when(bookingDocumentService.invoice(1L, "USD")).thenReturn(expected);
+
+        assertThat(controller.invoice(1L, "USD")).isSameAs(expected);
     }
 
     @Test

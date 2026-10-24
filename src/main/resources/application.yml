@@ -39,6 +39,25 @@ spring:
             issuer-uri: http://localhost:8080/realms/hotel-realm
             user-name-attribute: preferred_username
 
+hotel:
+  # Executor for @Async work: bounded pool and queue, so a burst of work cannot exhaust the server.
+  # ThreadPoolExecutor adds threads above core-pool-size only when the queue is FULL, so the core size must
+  # cover normal load: one invoice request alone needs 2 threads at the same time (rendering + exchange rate).
+  async:
+    thread-name-prefix: hotel-async-
+    core-pool-size: 4
+    max-pool-size: 8
+    queue-capacity: 50
+    documents-timeout: 3s         # how long a request waits for the combined invoice result
+    exchange-rate-timeout: 1500ms # after this the price is shown without conversion
+    outbox-retry-delay: PT10S     # how often rejected e-mails are resubmitted
+  # The external systems are simulated; these are their typical response times
+  simulation:
+    mail-delay: 1s
+    invoice-delay: 1s
+    exchange-rate-delay: 700ms
+    unreachable-recipients: []    # e-mails to these users fail, e.g. [ghost]
+
 management:
   endpoints:
     web:

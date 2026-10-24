@@ -195,3 +195,47 @@ curl -s http://localhost:8080/realms/hotel-realm/protocol/openid-connect/token \
   `confirmBatch` → `verify(auditRepository, never()).save(...)`.
 - Наживо: `http/lab4-aop-demo.sh` (застосунок має бути запущений). Ліміт — 10 бронювань за хвилину,
   тож між повторними запусками скрипта (або після `http/demo.sh`) треба зачекати хвилину.
+
+---
+
+# Лабораторна робота №5 (Асинхронна обробка)
+
+Три повільні побічні ефекти (зовнішні системи симульовані, затримки в `hotel.simulation.*`):
+
+| Що | Як | Де |
+|----|----|----|
+| E-mail гостю (~1 с) | **fire-and-forget**: `@Async void GuestNotifier.send` | `BookingService` публікує `BookingChangedEvent` → `BookingNotificationListener` (`@TransactionalEventListener`, після коміту) |
+| Рендер рахунку (~1 с) | `@Async CompletableFuture<Invoice> InvoiceRenderer.render` | `GET /api/bookings/{id}/invoice?currency=USD` |
+| Курс валют, зовнішній API (~0,7 с) | `@Async CompletableFuture<BigDecimal> ExchangeRateClient.convertFromUah` | той самий ендпоінт |
+
+`BookingDocumentService.invoice` запускає обидва виклики одразу і об'єднує їх через `thenCombine`
+(≈1 с замість ≈1,7 с послідовно).
+
+### Виконавець (`configuration/AsyncConfig`)
+
+`ThreadPoolTaskExecutor` з явними `core-pool-size`/`max-pool-size`/`queue-capacity` і префіксом потоків `hotel-async-`
+(`application.yml` → `hotel.async`). Його повертає `AsyncConfigurer.getAsyncExecutor()`, тому всі `@Async` працюють на ньому,
+а не на виконавці Boot за замовчуванням. `TaskDecorator` переносить `SecurityContext` у робочий потік.
+
+### Збої, таймаути, перевантаження
+
+| Ситуація | Рішення |
+|----------|---------|
+| Сервіс курсів упав або невідома валюта | `exceptionally` → рахунок повертається без конвертації, з поясненням у `note` |
+| Сервіс курсів відповідає надто довго | `orTimeout(hotel.async.exchange-rate-timeout)` → той самий fallback |
+| Рахунок рендериться надто довго | `get(hotel.async.documents-timeout)` → **503** + `Retry-After` |
+| `@Async void` (e-mail) кинув виняток | `LoggingAsyncUncaughtExceptionHandler`: ERROR у лог (метод + аргументи) і метрика `hotel.async.failures` |
+| Виконавець переповнений (`TaskRejectedException`) при рахунку | **503** «try again in 5 seconds» + `Retry-After`, а не 500 |
+| Виконавець переповнений при e-mail | лист потрапляє в `PendingEmailOutbox`, `@Scheduled` повторює відправку (`hotel.async.outbox-retry-delay`) |
+
+### Тести
+
+- `async/AsyncExecutionTest`: легкий Spring-контекст (лише async-біни, без БД). Перевіряє, що виклик повертає керування
+  до завершення повільного методу, потік має префікс `hotel-async-`, рендер і курс виконуються **одночасно**
+  (обидва мають зустрітися на `CyclicBarrier`, послідовно це неможливо), fallback, таймаути і запис збою `void`-методу хендлером.
+- `async/AsyncRejectionTest`: виконавець 1 потік / черга 1. Третя задача → `TaskRejectedException`, рахунок → `ServiceBusyException`,
+  лист → outbox, після звільнення outbox доставляє лист.
+- Unit-тести без Spring: `BookingDocumentServiceTest`, `BookingNotificationListenerTest`, `PendingEmailOutboxTest`,
+  `LoggingAsyncUncaughtExceptionHandlerTest`, `IntegrationSimulationTest`.
+- Затримки в тестах керуються через `ControllableSlowCalls` (блокування / відпускання / бар'єр), без `Thread.sleep`.
+- Наживо: `http/lab5-async-demo.sh`.
