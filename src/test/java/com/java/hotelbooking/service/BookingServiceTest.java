@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -101,9 +102,10 @@ class BookingServiceTest {
         return new UsernamePasswordAuthenticationToken(username, "n/a", AuthorityUtils.createAuthorityList(roles));
     }
 
+    // lenient: the admin path must not look at the date at all, so the stub may stay unused
     private void todayIs(LocalDate date) {
-        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
-        when(clock.instant()).thenReturn(date.atStartOfDay().toInstant(ZoneOffset.UTC));
+        lenient().when(clock.getZone()).thenReturn(ZoneOffset.UTC);
+        lenient().when(clock.instant()).thenReturn(date.atStartOfDay().toInstant(ZoneOffset.UTC));
     }
 
     private void mapperEchoesEntity() {
@@ -344,6 +346,7 @@ class BookingServiceTest {
 
     @Test
     void cancel_adminOnCheckInDay_isAllowed() {
+        todayIs(TODAY);
         Booking booking = booking(1L, GUEST, BookingStatus.CONFIRMED, TODAY);
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
         mapperEchoesEntity();
