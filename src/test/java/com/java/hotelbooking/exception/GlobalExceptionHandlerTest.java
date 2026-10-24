@@ -1,6 +1,7 @@
 package com.java.hotelbooking.exception;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -70,6 +71,17 @@ class GlobalExceptionHandlerTest {
                 .containsExactly(
                         Map.entry("checkIn", "must not be null"),
                         Map.entry("guestsCount", "must be greater than or equal to 1"));
+    }
+
+    @Test
+    void handleRateLimit_returns429WithRetryAfterHeader() {
+        ResponseEntity<ApiError> response =
+                handler.handleRateLimit(new RateLimitExceededException("Too many calls", 42), request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+        assertThat(response.getHeaders().getFirst(HttpHeaders.RETRY_AFTER)).isEqualTo("42");
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("Too many calls");
     }
 
     @Test

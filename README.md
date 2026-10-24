@@ -163,3 +163,35 @@ curl -s http://localhost:8080/realms/hotel-realm/protocol/openid-connect/token \
 | `controller/PostCreatedWebMvcTest` | 4–5: merged-атрибути `@PostCreated` = оригінальна пара; ендпоінт з оригінальними анотаціями й ендпоінт з `@PostCreated` однаково дають 201 на POST і 405 на GET; реальні `POST /api/hotels` і `/api/hotels/{id}/rooms` → 201 |
 | `web/CurrentUsernameArgumentResolverTest` | 6–7: `supportsParameter` true/false (без анотації, не `String`); `resolveArgument` повертає ім'я або кидає виняток без користувача |
 | `controller/BookingControllerWebMvcTest` | 8: реальний запит → резолвлене ім'я потрапляє в `bookingService.create(..., "bob")` / `listMine("bob")` і у відповідь; невалідний період → 400 з `fieldErrors.checkOut` |
+
+---
+
+# Лабораторна робота №4 (AOP)
+
+Три пари «власна анотація + аспект» (`domain/annotation/*`, `aspect/*`), кожна з іншим типом advice:
+
+| Анотація | Аспект / advice | Де застосована | Що робить |
+|----------|-----------------|----------------|-----------|
+| `@AuditBooking(action)` | `BookingAuditAspect`, `@AfterReturning` | `BookingService.create / confirm / cancel` | пише рядок у таблицю `booking_audit` (дія, новий статус, хто, коли); невдалі виклики не аудитуються |
+| `@Idempotent` | `IdempotencyAspect`, `@Around` | `BookingController.create` | повтор запиту з тим самим заголовком `Idempotency-Key` повертає збережену відповідь **без** `proceed()`; ключі прив'язані до користувача, мають TTL, помилки не кешуються |
+| `@RateLimited(permits, perSeconds)` | `RateLimitAspect`, `@Before` | `BookingService.create` (10 за хвилину) | ковзне вікно на користувача; перевищення → `RateLimitExceededException` → **429** + `Retry-After` |
+
+Нове в API: `GET /api/admin/audit?bookingId=` (журнал, ADMIN), `PATCH /api/bookings/confirm-batch` (тіло — масив id, ADMIN).
+Міграція `005-create-booking-audit.xml` (без FK, щоб журнал переживав видалення бронювання).
+
+### Self-invocation
+
+`BookingService.confirmBatch(ids)` викликає `this.confirm(id)` для кожного id. Виклик іде повз Spring-проксі, тому
+`@AuditBooking` на `confirm` мовчки не спрацьовує: бронювання підтверджуються, але рядків `CONFIRM` у журналі немає,
+і жодної помилки. Той самий `confirm`, викликаний ззовні (`PATCH /api/bookings/{id}/confirm`), аудитується.
+Залишено свідомо, як того вимагає завдання.
+
+### Перевірка
+
+- Unit-тести advice без Spring-контексту, на моках `JoinPoint` / `ProceedingJoinPoint`: `aspect/BookingAuditAspectTest`,
+  `IdempotencyAspectTest` (чи викликається `proceed()`: без ключа, повтор, інший користувач, TTL, помилка, задовгий ключ),
+  `RateLimitAspectTest`.
+- `aspect/SelfInvocationTest` — справжній AOP-проксі (`AspectJProxyFactory`, без контексту): зовнішній `confirm` → аудит є,
+  `confirmBatch` → `verify(auditRepository, never()).save(...)`.
+- Наживо: `http/lab4-aop-demo.sh` (застосунок має бути запущений). Ліміт — 10 бронювань за хвилину,
+  тож між повторними запусками скрипта (або після `http/demo.sh`) треба зачекати хвилину.

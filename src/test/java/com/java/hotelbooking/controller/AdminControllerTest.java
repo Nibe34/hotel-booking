@@ -1,6 +1,7 @@
 package com.java.hotelbooking.controller;
 
 import com.java.hotelbooking.domain.dto.AdminStatsResponse;
+import com.java.hotelbooking.domain.dto.BookingAuditResponse;
 import com.java.hotelbooking.service.AdminService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -8,6 +9,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,5 +30,13 @@ class AdminControllerTest {
         when(adminService.stats()).thenReturn(expected);
 
         assertThat(controller.stats()).isSameAs(expected);
+    }
+
+    @Test
+    void audit_passesBookingIdFilter() {
+        List<BookingAuditResponse> expected = List.of();
+        when(adminService.audit(4L)).thenReturn(expected);
+
+        assertThat(controller.audit(4L)).isSameAs(expected);
     }
 }

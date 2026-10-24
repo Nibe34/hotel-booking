@@ -1,5 +1,6 @@
 package com.java.hotelbooking.controller;
 
+import com.java.hotelbooking.domain.annotation.Idempotent;
 import com.java.hotelbooking.domain.dto.BookingCreateRequest;
 import com.java.hotelbooking.domain.dto.BookingResponse;
 import com.java.hotelbooking.service.BookingService;
@@ -28,6 +29,7 @@ public class BookingController {
     private final BookingService bookingService;
 
     @PostCreated
+    @Idempotent
     public BookingResponse create(@Valid @RequestBody BookingCreateRequest request, @CurrentUsername String username) {
         return bookingService.create(request, username);
     }
@@ -55,6 +57,11 @@ public class BookingController {
     @PatchMapping("/{id}/confirm")
     public BookingResponse confirm(@PathVariable Long id) {
         return bookingService.confirm(id);
+    }
+
+    @PatchMapping("/confirm-batch")
+    public List<BookingResponse> confirmBatch(@RequestBody List<Long> ids) {
+        return bookingService.confirmBatch(ids);
     }
 
     @DeleteMapping("/{id}")

@@ -1,13 +1,16 @@
 package com.java.hotelbooking.domain.mapper;
 
+import com.java.hotelbooking.domain.dto.BookingAuditResponse;
 import com.java.hotelbooking.domain.dto.BookingResponse;
 import com.java.hotelbooking.domain.dto.HotelRequest;
 import com.java.hotelbooking.domain.dto.HotelResponse;
 import com.java.hotelbooking.domain.dto.RoomRequest;
 import com.java.hotelbooking.domain.dto.RoomResponse;
+import com.java.hotelbooking.domain.enums.AuditAction;
 import com.java.hotelbooking.domain.enums.BookingStatus;
 import com.java.hotelbooking.domain.enums.RoomType;
 import com.java.hotelbooking.domain.model.Booking;
+import com.java.hotelbooking.domain.model.BookingAuditEntry;
 import com.java.hotelbooking.domain.model.Hotel;
 import com.java.hotelbooking.domain.model.Room;
 import org.junit.jupiter.api.Test;
@@ -26,6 +29,7 @@ class MapperImplTest {
     private final HotelMapper hotelMapper = new HotelMapperImpl();
     private final RoomMapper roomMapper = new RoomMapperImpl();
     private final BookingMapper bookingMapper = new BookingMapperImpl();
+    private final BookingAuditMapper auditMapper = new BookingAuditMapperImpl();
 
     private Hotel hotel() {
         Hotel hotel = new Hotel();
@@ -176,5 +180,22 @@ class MapperImplTest {
     @Test
     void bookingMapper_nullInput_returnsNull() {
         assertThat(bookingMapper.toResponse(null)).isNull();
+    }
+
+    // ---------- BookingAuditMapper ----------
+
+    @Test
+    void auditToResponse_copiesAllFields() {
+        BookingAuditEntry entry = new BookingAuditEntry();
+        entry.setId(1L);
+        entry.setBookingId(5L);
+        entry.setAction(AuditAction.CONFIRM);
+        entry.setStatus(BookingStatus.CONFIRMED);
+        entry.setActor("alice");
+        entry.setCreatedAt(Instant.parse("2026-10-24T12:00:00Z"));
+
+        assertThat(auditMapper.toResponse(entry)).isEqualTo(new BookingAuditResponse(1L, 5L, AuditAction.CONFIRM,
+                BookingStatus.CONFIRMED, "alice", Instant.parse("2026-10-24T12:00:00Z")));
+        assertThat(auditMapper.toResponse(null)).isNull();
     }
 }
