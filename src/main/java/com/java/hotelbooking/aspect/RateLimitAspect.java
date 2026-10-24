@@ -2,6 +2,7 @@ package com.java.hotelbooking.aspect;
 
 import com.java.hotelbooking.domain.annotation.RateLimited;
 import com.java.hotelbooking.exception.RateLimitExceededException;
+import com.java.hotelbooking.service.AuditTrail;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
@@ -33,7 +34,7 @@ public class RateLimitAspect {
     @Before("@annotation(rateLimited)")
     public void checkLimit(JoinPoint joinPoint, RateLimited rateLimited) {
         String method = joinPoint.getSignature().toShortString();
-        String actor = CurrentActor.name();
+        String actor = AuditTrail.currentActor();
         Instant now = clock.instant();
         Instant windowStart = now.minusSeconds(rateLimited.perSeconds());
 

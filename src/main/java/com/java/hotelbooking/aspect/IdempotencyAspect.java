@@ -1,6 +1,7 @@
 package com.java.hotelbooking.aspect;
 
 import com.java.hotelbooking.domain.annotation.Idempotent;
+import com.java.hotelbooking.service.AuditTrail;
 import com.java.hotelbooking.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +47,7 @@ public class IdempotencyAspect {
             throw new BadRequestException(idempotent.header() + " must be at most " + MAX_KEY_LENGTH + " characters");
         }
 
-        String cacheKey = CurrentActor.name() + '|' + joinPoint.getSignature().toLongString() + '|' + key;
+        String cacheKey = AuditTrail.currentActor() + '|' + joinPoint.getSignature().toLongString() + '|' + key;
         Instant now = clock.instant();
         StoredResult stored = results.get(cacheKey);
         if (stored != null && stored.expiresAt().isAfter(now)) {

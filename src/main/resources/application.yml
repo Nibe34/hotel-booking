@@ -19,6 +19,23 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/changelog-master.xml
 
+  quartz:
+    job-store-type: jdbc                  # the schedule lives in the QRTZ_* tables and survives restarts
+    jdbc:
+      initialize-schema: never            # Liquibase owns the QRTZ_* tables (changeset 006)
+    overwrite-existing-jobs: true         # QuartzConfig is the source of truth on every startup, no duplicates
+    wait-for-jobs-to-complete-on-shutdown: true
+    properties:
+      org:
+        quartz:
+          scheduler:
+            instanceName: hotel-booking-scheduler
+          threadPool:
+            threadCount: 3
+          jobStore:
+            driverDelegateClass: org.quartz.impl.jdbcjobstore.PostgreSQLDelegate
+            misfireThreshold: 60000       # ms: a run later than this counts as misfired
+
   security:
     oauth2:
       # JWT validation for direct API calls (Authorization: Bearer ...)

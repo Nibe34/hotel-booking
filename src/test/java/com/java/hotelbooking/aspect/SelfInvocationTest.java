@@ -11,6 +11,7 @@ import com.java.hotelbooking.domain.model.Room;
 import com.java.hotelbooking.repository.BookingAuditRepository;
 import com.java.hotelbooking.repository.BookingRepository;
 import com.java.hotelbooking.repository.RoomRepository;
+import com.java.hotelbooking.service.AuditTrail;
 import com.java.hotelbooking.service.BookingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -73,7 +75,8 @@ class SelfInvocationTest {
                 eventPublisher);
         AspectJProxyFactory factory = new AspectJProxyFactory(target);
         factory.setProxyTargetClass(true);
-        factory.addAspect(new BookingAuditAspect(auditRepository, CLOCK));
+        factory.addAspect(new BookingAuditAspect(new AuditTrail(auditRepository, CLOCK)));
+        lenient().when(auditRepository.save(any(BookingAuditEntry.class))).thenAnswer(inv -> inv.getArgument(0));
         proxy = factory.getProxy();
 
         when(bookingRepository.findById(any())).thenAnswer(inv -> Optional.of(pending(inv.getArgument(0))));
