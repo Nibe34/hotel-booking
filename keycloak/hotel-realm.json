@@ -1,0 +1,49 @@
+{
+  "realm": "hotel-realm",
+  "enabled": true,
+  "accessTokenLifespan": 3600,
+  "sslRequired": "none",
+  "roles": {
+    "realm": [
+      { "name": "USER", "description": "Guest who can book rooms" },
+      { "name": "ADMIN", "description": "Hotel administrator" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "hotel-app",
+      "name": "Hotel Booking App",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "redirectUris": [ "http://localhost:8081/*", "http://127.0.0.1:8081/*" ],
+      "webOrigins": [ "+" ],
+      "attributes": { "post.logout.redirect.uris": "http://localhost:8081/*" },
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false
+    }
+  ],
+  "users": [
+    {
+      "username": "alice",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "alice@hotel.local",
+      "firstName": "Alice",
+      "lastName": "Admin",
+      "credentials": [ { "type": "password", "value": "alice123", "temporary": false } ],
+      "realmRoles": [ "USER", "ADMIN" ]
+    },
+    {
+      "username": "bob",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "bob@hotel.local",
+      "firstName": "Bob",
+      "lastName": "Guest",
+      "credentials": [ { "type": "password", "value": "bob123", "temporary": false } ],
+      "realmRoles": [ "USER" ]
+    }
+  ]
+}

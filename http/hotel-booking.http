@@ -1,0 +1,255 @@
+### Lab 1 — Hotel Booking. Run in IntelliJ IDEA (HTTP Client), environment "local".
+### Run the two "Get token" requests first: they save tokens into {{alice_token}} / {{bob_token}}.
+
+### 0.1 Get token — alice (ADMIN, USER)
+POST {{keycloak}}/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=hotel-app&username=alice&password=alice123
+
+> {% client.global.set("alice_token", response.body.access_token); %}
+
+### 0.2 Get token — bob (USER)
+POST {{keycloak}}/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=hotel-app&username=bob&password=bob123
+
+> {% client.global.set("bob_token", response.body.access_token); %}
+
+
+########## AC1: CRUD (hotels / rooms) ##########
+
+### 1.1 List hotels — public (200)
+GET {{app}}/api/hotels
+
+### 1.2 Filter hotels by city — public (200)
+GET {{app}}/api/hotels?city=Kyiv
+
+### 1.3 Get hotel by id — public (200)
+GET {{app}}/api/hotels/1
+
+### 1.4 Create hotel — alice/ADMIN (201)
+POST {{app}}/api/hotels
+Authorization: Bearer {{alice_token}}
+Content-Type: application/json
+
+{
+  "name": "Kharkiv Plaza",
+  "city": "Kharkiv",
+  "address": "Sumska 1",
+  "stars": 4,
+  "description": "Business hotel in the centre"
+}
+
+> {% client.global.set("hotel_id", response.body.id); %}
+
+### 1.5 Update hotel — alice/ADMIN (200)
+PUT {{app}}/api/hotels/{{hotel_id}}
+Authorization: Bearer {{alice_token}}
+Content-Type: application/json
+
+{
+  "name": "Kharkiv Plaza",
+  "city": "Kharkiv",
+  "address": "Sumska 5",
+  "stars": 5,
+  "description": "Renovated in 2026"
+}
+
+### 1.6 Create room in hotel — alice/ADMIN (201)
+POST {{app}}/api/hotels/{{hotel_id}}/rooms
+Authorization: Bearer {{alice_token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "12",
+  "type": "DOUBLE",
+  "capacity": 2,
+  "pricePerNight": 2100.00
+}
+
+> {% client.global.set("room_id", response.body.id); %}
+
+### 1.7 List rooms of hotel — public (200)
+GET {{app}}/api/hotels/{{hotel_id}}/rooms
+
+### 1.8 Update room — alice/ADMIN (200)
+PUT {{app}}/api/rooms/{{room_id}}
+Authorization: Bearer {{alice_token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "12",
+  "type": "SUITE",
+  "capacity": 3,
+  "pricePerNight": 3500.00
+}
+
+### 1.9 Validation error (400)
+POST {{app}}/api/hotels
+Authorization: Bearer {{alice_token}}
+Content-Type: application/json
+
+{
+  "name": "",
+  "city": "Kyiv",
+  "address": "x",
+  "stars": 9
+}
+
+### 1.10 Duplicate hotel (409)
+POST {{app}}/api/hotels
+Authorization: Bearer {{alice_token}}
+Content-Type: application/json
+
+{
+  "name": "Dnipro Riverside",
+  "city": "Kyiv",
+  "address": "x",
+  "stars": 3
+}
+
+### 1.11 Delete room — alice/ADMIN (204)
+DELETE {{app}}/api/rooms/{{room_id}}
+Authorization: Bearer {{alice_token}}
+
+### 1.12 Delete hotel — alice/ADMIN (204)
+DELETE {{app}}/api/hotels/{{hotel_id}}
+Authorization: Bearer {{alice_token}}
+
+### 1.13 Deleted hotel is gone (404)
+GET {{app}}/api/hotels/{{hotel_id}}
+
+
+########## AC5: JWT authentication ##########
+
+### 5.1 Protected endpoint without token (401)
+GET {{app}}/api/bookings/my
+
+### 5.2 Invalid token (401)
+GET {{app}}/api/bookings/my
+Authorization: Bearer not-a-real-token
+
+### 5.3 Valid token — no session, no UI (200)
+GET {{app}}/api/bookings/my
+Authorization: Bearer {{bob_token}}
+
+
+########## AC6: SecurityFilterChain rules ##########
+
+### 6.1 bob (USER) creates hotel — POST /api/hotels is ADMIN-only in the chain (403)
+POST {{app}}/api/hotels
+Authorization: Bearer {{bob_token}}
+Content-Type: application/json
+
+{
+  "name": "Bob's Hostel",
+  "city": "Kyiv",
+  "address": "x",
+  "stars": 1
+}
+
+### 6.2 bob (USER) deletes a room (403)
+DELETE {{app}}/api/rooms/1
+Authorization: Bearer {{bob_token}}
+
+### 6.3 bob (USER) -> /api/admin/** is ADMIN-only in the chain (403)
+GET {{app}}/api/admin/stats
+Authorization: Bearer {{bob_token}}
+
+### 6.4 alice (ADMIN) -> /api/admin/stats (200)
+GET {{app}}/api/admin/stats
+Authorization: Bearer {{alice_token}}
+
+
+########## Bookings flow ##########
+
+### B.1 Search available rooms — public (200)
+GET {{app}}/api/rooms/available?checkIn=2026-12-10&checkOut=2026-12-13&guests=2
+
+### B.2 bob books room 2 for 3 nights (201, PENDING, totalPrice = 3 * 2600)
+POST {{app}}/api/bookings
+Authorization: Bearer {{bob_token}}
+Content-Type: application/json
+
+{
+  "roomId": 2,
+  "checkIn": "2026-12-10",
+  "checkOut": "2026-12-13",
+  "guestsCount": 2
+}
+
+> {% client.global.set("booking_id", response.body.id); %}
+
+### B.3 Same room, overlapping dates (409)
+POST {{app}}/api/bookings
+Authorization: Bearer {{alice_token}}
+Content-Type: application/json
+
+{
+  "roomId": 2,
+  "checkIn": "2026-12-12",
+  "checkOut": "2026-12-15",
+  "guestsCount": 1
+}
+
+### B.4 Too many guests for the room (400)
+POST {{app}}/api/bookings
+Authorization: Bearer {{bob_token}}
+Content-Type: application/json
+
+{
+  "roomId": 1,
+  "checkIn": "2026-12-20",
+  "checkOut": "2026-12-21",
+  "guestsCount": 3
+}
+
+### B.5 bob — my bookings (200)
+GET {{app}}/api/bookings/my
+Authorization: Bearer {{bob_token}}
+
+### B.6 bob — own booking by id (200, @PostAuthorize owner check)
+GET {{app}}/api/bookings/{{booking_id}}
+Authorization: Bearer {{bob_token}}
+
+
+########## AC7: @PreAuthorize (chain only requires "authenticated" for /api/bookings/**) ##########
+
+### 7.1 bob (USER) lists ALL bookings — @PreAuthorize("hasRole('ADMIN')") (403 AccessDeniedException)
+GET {{app}}/api/bookings
+Authorization: Bearer {{bob_token}}
+
+### 7.2 alice (ADMIN) lists ALL bookings (200)
+GET {{app}}/api/bookings
+Authorization: Bearer {{alice_token}}
+
+### 7.3 bob (USER) confirms booking — ADMIN only (403)
+PATCH {{app}}/api/bookings/{{booking_id}}/confirm
+Authorization: Bearer {{bob_token}}
+
+### 7.4 alice (ADMIN) confirms booking (200, CONFIRMED)
+PATCH {{app}}/api/bookings/{{booking_id}}/confirm
+Authorization: Bearer {{alice_token}}
+
+### 7.5 bob (USER) deletes booking — ADMIN only (403)
+DELETE {{app}}/api/bookings/{{booking_id}}
+Authorization: Bearer {{bob_token}}
+
+### 7.6 bob cancels own booking (200, CANCELLED)
+PATCH {{app}}/api/bookings/{{booking_id}}/cancel
+Authorization: Bearer {{bob_token}}
+
+### 7.7 alice (ADMIN) deletes booking (204)
+DELETE {{app}}/api/bookings/{{booking_id}}
+Authorization: Bearer {{alice_token}}
+
+
+########## AC4: OIDC (open in a browser, not here) ##########
+# http://localhost:8081/              -> landing page, "Увійти через Keycloak"
+# http://localhost:8081/ui/index.html -> 302 to Keycloak login, back with a session
+# http://localhost:8081/logout        -> logs out of the app and Keycloak
+
+### 4.1 UI page without session -> 302 redirect to /oauth2/authorization/keycloak
+GET {{app}}/ui/index.html

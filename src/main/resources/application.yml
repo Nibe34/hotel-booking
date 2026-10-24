@@ -1,0 +1,46 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: hotel-booking
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/hotel_booking
+    username: appuser
+    password: appuser
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: true
+
+  liquibase:
+    change-log: classpath:db/changelog/changelog-master.xml
+
+  security:
+    oauth2:
+      # JWT validation for direct API calls (Authorization: Bearer ...)
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/hotel-realm
+      # OIDC login for UI users
+      client:
+        registration:
+          keycloak:
+            client-id: hotel-app
+            client-authentication-method: none
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/keycloak"
+            scope: openid, profile, email
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8080/realms/hotel-realm
+            user-name-attribute: preferred_username
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

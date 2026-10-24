@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="004-seed-hotels" author="student">
+        <insert tableName="hotels">
+            <column name="name" value="Dnipro Riverside"/>
+            <column name="city" value="Kyiv"/>
+            <column name="address" value="Naberezhne shose 2"/>
+            <column name="stars" valueNumeric="4"/>
+            <column name="description" value="Hotel on the bank of the Dnipro with a view of the Left Bank"/>
+        </insert>
+        <insert tableName="hotels">
+            <column name="name" value="Old Town Inn"/>
+            <column name="city" value="Lviv"/>
+            <column name="address" value="Rynok Square 10"/>
+            <column name="stars" valueNumeric="3"/>
+            <column name="description" value="Cozy inn in the historic centre"/>
+        </insert>
+        <insert tableName="hotels">
+            <column name="name" value="Black Sea Resort"/>
+            <column name="city" value="Odesa"/>
+            <column name="address" value="Frantsuzkyi bulvar 33"/>
+            <column name="stars" valueNumeric="5"/>
+            <column name="description" value="Seaside resort with private beach"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="004-seed-rooms" author="student">
+        <insert tableName="rooms">
+            <column name="hotel_id" valueComputed="(SELECT id FROM hotels WHERE name = 'Dnipro Riverside')"/>
+            <column name="room_number" value="101"/>
+            <column name="room_type" value="SINGLE"/>
+            <column name="capacity" valueNumeric="1"/>
+            <column name="price_per_night" valueNumeric="1800.00"/>
+        </insert>
+        <insert tableName="rooms">
+            <column name="hotel_id" valueComputed="(SELECT id FROM hotels WHERE name = 'Dnipro Riverside')"/>
+            <column name="room_number" value="102"/>
+            <column name="room_type" value="DOUBLE"/>
+            <column name="capacity" valueNumeric="2"/>
+            <column name="price_per_night" valueNumeric="2600.00"/>
+        </insert>
+        <insert tableName="rooms">
+            <column name="hotel_id" valueComputed="(SELECT id FROM hotels WHERE name = 'Dnipro Riverside')"/>
+            <column name="room_number" value="301"/>
+            <column name="room_type" value="SUITE"/>
+            <column name="capacity" valueNumeric="4"/>
+            <column name="price_per_night" valueNumeric="6500.00"/>
+        </insert>
+        <insert tableName="rooms">
+            <column name="hotel_id" valueComputed="(SELECT id FROM hotels WHERE name = 'Old Town Inn')"/>
+            <column name="room_number" value="1"/>
+            <column name="room_type" value="DOUBLE"/>
+            <column name="capacity" valueNumeric="2"/>
+            <column name="price_per_night" valueNumeric="1500.00"/>
+        </insert>
+        <insert tableName="rooms">
+            <column name="hotel_id" valueComputed="(SELECT id FROM hotels WHERE name = 'Old Town Inn')"/>
+            <column name="room_number" value="2"/>
+            <column name="room_type" value="FAMILY"/>
+            <column name="capacity" valueNumeric="4"/>
+            <column name="price_per_night" valueNumeric="2400.00"/>
+        </insert>
+        <insert tableName="rooms">
+            <column name="hotel_id" valueComputed="(SELECT id FROM hotels WHERE name = 'Black Sea Resort')"/>
+            <column name="room_number" value="505"/>
+            <column name="room_type" value="SUITE"/>
+            <column name="capacity" valueNumeric="3"/>
+            <column name="price_per_night" valueNumeric="9900.00"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

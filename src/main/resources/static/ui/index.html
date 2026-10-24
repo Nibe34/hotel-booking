@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <title>Hotel Booking</title>
+    <style>
+        body { font-family: system-ui, sans-serif; margin: 0; background: #f5f6f8; color: #1f2328; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 12px 24px; background: #1e3a8a; color: #fff; }
+        header a { color: #fff; }
+        main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+        section { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+        h2 { margin-top: 0; font-size: 1.2rem; }
+        table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+        th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e5e7eb; }
+        tr.selected { background: #eef2ff; }
+        input, select, button { font: inherit; padding: 5px 8px; }
+        button { cursor: pointer; border: 1px solid #c7cbd1; border-radius: 4px; background: #fff; }
+        button.primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+        button.danger { color: #b91c1c; border-color: #fca5a5; }
+        form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+        .badge { padding: 2px 8px; border-radius: 10px; font-size: .8rem; background: #e5e7eb; }
+        .PENDING { background: #fef3c7; } .CONFIRMED { background: #d1fae5; } .CANCELLED { background: #fee2e2; }
+        #toast { position: fixed; bottom: 16px; right: 16px; padding: 10px 14px; border-radius: 6px; color: #fff; display: none; max-width: 420px; }
+        .admin-only { display: none; }
+        body.is-admin .admin-only { display: revert; }
+    </style>
+</head>
+<body>
+<header>
+    <strong>Hotel Booking</strong>
+    <span><span id="who"></span> &nbsp; <a href="/logout">Вийти</a></span>
+</header>
+<main>
+    <section>
+        <h2>Готелі</h2>
+        <form id="cityFilter">
+            <input name="city" placeholder="Місто (порожньо = всі)">
+            <button>Фільтр</button>
+        </form>
+        <table>
+            <thead><tr><th>ID</th><th>Назва</th><th>Місто</th><th>Адреса</th><th>★</th><th>Опис</th><th></th></tr></thead>
+            <tbody id="hotels"></tbody>
+        </table>
+        <form id="hotelForm" class="admin-only">
+            <input type="hidden" name="id">
+            <input name="name" placeholder="Назва" required>
+            <input name="city" placeholder="Місто" required>
+            <input name="address" placeholder="Адреса" required>
+            <input name="stars" type="number" min="1" max="5" placeholder="★" required style="width:60px">
+            <input name="description" placeholder="Опис">
+            <button class="primary" id="hotelSubmit">Додати готель</button>
+            <button type="button" id="hotelReset">Скинути</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Номери <span id="roomsTitle"></span></h2>
+        <table>
+            <thead><tr><th>ID</th><th>Номер</th><th>Тип</th><th>Місць</th><th>Ціна/ніч</th><th></th></tr></thead>
+            <tbody id="rooms"><tr><td colspan="6">Оберіть готель</td></tr></tbody>
+        </table>
+        <form id="roomForm" class="admin-only">
+            <input type="hidden" name="id">
+            <input name="roomNumber" placeholder="Номер" required style="width:80px">
+            <select name="type">
+                <option>SINGLE</option><option>DOUBLE</option><option>TWIN</option><option>SUITE</option><option>FAMILY</option>
+            </select>
+            <input name="capacity" type="number" min="1" max="10" placeholder="Місць" required style="width:80px">
+            <input name="pricePerNight" type="number" min="0.01" step="0.01" placeholder="Ціна" required style="width:110px">
+            <button class="primary" id="roomSubmit">Додати номер</button>
+            <button type="button" id="roomReset">Скинути</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Пошук вільних номерів і бронювання</h2>
+        <form id="searchForm">
+            <label>Заїзд <input type="date" name="checkIn" required></label>
+            <label>Виїзд <input type="date" name="checkOut" required></label>
+            <label>Гостей <input type="number" name="guests" min="1" value="1" style="width:60px"></label>
+            <button class="primary">Шукати</button>
+        </form>
+        <table>
+            <thead><tr><th>Готель</th><th>Номер</th><th>Тип</th><th>Місць</th><th>Ціна/ніч</th><th></th></tr></thead>
+            <tbody id="available"></tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>Мої бронювання</h2>
+        <table>
+            <thead><tr><th>ID</th><th>Готель</th><th>Номер</th><th>Дати</th><th>Гостей</th><th>Сума</th><th>Статус</th><th></th></tr></thead>
+            <tbody id="myBookings"></tbody>
+        </table>
+    </section>
+
+    <section class="admin-only">
+        <h2>Усі бронювання (ADMIN)</h2>
+        <p id="stats"></p>
+        <table>
+            <thead><tr><th>ID</th><th>Гість</th><th>Готель</th><th>Номер</th><th>Дати</th><th>Сума</th><th>Статус</th><th></th></tr></thead>
+            <tbody id="allBookings"></tbody>
+        </table>
+    </section>
+</main>
+<div id="toast"></div>
+
+<script>
+    let token = null;
+    let tokenExpiresAt = 0;
+    let roles = [];
+    let selectedHotel = null;
+
+    const $ = (id) => document.getElementById(id);
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+    const isAdmin = () => roles.includes('ADMIN');
+
+    function toast(message, ok = true) {
+        const el = $('toast');
+        el.textContent = message;
+        el.style.background = ok ? '#15803d' : '#b91c1c';
+        el.style.display = 'block';
+        clearTimeout(el._t);
+        el._t = setTimeout(() => el.style.display = 'none', 4000);
+    }
+
+    // The OIDC session lives on the server; for API calls we fetch the user's access token
+    // and send it as a Bearer JWT, exactly like an external API client would.
+    async function ensureToken() {
+        if (token && Date.now() < tokenExpiresAt - 30000) return token;
+        const res = await fetch('/ui/token', {redirect: 'manual'});
+        if (!res.ok) { location.href = '/ui/index.html'; throw new Error('session expired'); }
+        const data = await res.json();
+        token = data.accessToken;
+        tokenExpiresAt = new Date(data.expiresAt).getTime();
+        const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        roles = payload.realm_access?.roles?.filter(r => r === 'ADMIN' || r === 'USER') ?? [];
+        $('who').textContent = `${data.username} [${roles.join(', ')}]`;
+        document.body.classList.toggle('is-admin', isAdmin());
+        return token;
+    }
+
+    async function api(method, url, body) {
+        const headers = {'Authorization': 'Bearer ' + await ensureToken()};
+        if (body !== undefined) headers['Content-Type'] = 'application/json';
+        const res = await fetch(url, {method, headers, body: body !== undefined ? JSON.stringify(body) : undefined});
+        if (res.status === 204) return null;
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+            let msg = `${res.status}: ${data?.message ?? res.statusText}`;
+            if (data?.fieldErrors) msg += ' — ' + Object.entries(data.fieldErrors).map(([f, m]) => `${f}: ${m}`).join('; ');
+            throw new Error(msg);
+        }
+        return data;
+    }
+
+    const run = (fn) => async (...args) => {
+        try { await fn(...args); } catch (e) { toast(e.message, false); }
+    };
+
+    function formData(form) {
+        return Object.fromEntries(new FormData(form).entries());
+    }
+
+    // ---------- hotels ----------
+    async function loadHotels() {
+        const city = $('cityFilter').city.value.trim();
+        const hotels = await api('GET', '/api/hotels' + (city ? '?city=' + encodeURIComponent(city) : ''));
+        $('hotels').innerHTML = hotels.map(h => `
+            <tr class="${selectedHotel?.id === h.id ? 'selected' : ''}">
+                <td>${h.id}</td><td>${esc(h.name)}</td><td>${esc(h.city)}</td><td>${esc(h.address)}</td>
+                <td>${h.stars}</td><td>${esc(h.description)}</td>
+                <td>
+                    <button data-act="rooms" data-id="${h.id}">Номери</button>
+                    <span class="admin-only">
+                        <button data-act="edit" data-id="${h.id}">Редагувати</button>
+                        <button class="danger" data-act="delete" data-id="${h.id}">Видалити</button>
+                    </span>
+                </td>
+            </tr>`).join('') || '<tr><td colspan="7">Нічого не знайдено</td></tr>';
+        $('hotels')._data = hotels;
+    }
+
+    $('hotels').addEventListener('click', run(async (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const hotel = $('hotels')._data.find(h => h.id === Number(btn.dataset.id));
+        if (btn.dataset.act === 'rooms') {
+            selectedHotel = hotel;
+            await Promise.all([loadHotels(), loadRooms()]);
+        } else if (btn.dataset.act === 'edit') {
+            const f = $('hotelForm');
+            for (const k of ['id', 'name', 'city', 'address', 'stars', 'description']) f[k].value = hotel[k] ?? '';
+            $('hotelSubmit').textContent = 'Зберегти зміни';
+        } else if (btn.dataset.act === 'delete') {
+            if (btn.dataset.confirm !== 'yes') {
+                btn.dataset.confirm = 'yes';
+                btn.textContent = 'Точно? (разом з номерами)';
+                return;
+            }
+            await api('DELETE', '/api/hotels/' + hotel.id);
+            if (selectedHotel?.id === hotel.id) { selectedHotel = null; await loadRooms(); }
+            toast('Готель видалено');
+            await loadHotels();
+        }
+    }));
+
+    function resetHotelForm() {
+        $('hotelForm').reset();
+        $('hotelForm').id.value = '';
+        $('hotelSubmit').textContent = 'Додати готель';
+    }
+
+    $('hotelForm').addEventListener('submit', run(async (e) => {
+        e.preventDefault();
+        const {id, ...data} = formData(e.target);
+        data.stars = Number(data.stars);
+        if (id) {
+            await api('PUT', '/api/hotels/' + id, data);
+            toast('Готель оновлено');
+        } else {
+            await api('POST', '/api/hotels', data);
+            toast('Готель створено');
+        }
+        resetHotelForm();
+        await loadHotels();
+    }));
+    $('hotelReset').addEventListener('click', resetHotelForm);
+    $('cityFilter').addEventListener('submit', run(async (e) => { e.preventDefault(); await loadHotels(); }));
+
+    // ---------- rooms ----------
+    async function loadRooms() {
+        if (!selectedHotel) {
+            $('roomsTitle').textContent = '';
+            $('rooms').innerHTML = '<tr><td colspan="6">Оберіть готель</td></tr>';
+            return;
+        }
+        $('roomsTitle').textContent = '— ' + selectedHotel.name;
+        const rooms = await api('GET', `/api/hotels/${selectedHotel.id}/rooms`);
+        $('rooms').innerHTML = rooms.map(r => `
+            <tr>
+                <td>${r.id}</td><td>${esc(r.roomNumber)}</td><td>${r.type}</td><td>${r.capacity}</td><td>${r.pricePerNight}</td>
+                <td class="admin-only">
+                    <button data-act="edit" data-id="${r.id}">Редагувати</button>
+                    <button class="danger" data-act="delete" data-id="${r.id}">Видалити</button>
+                </td>
+            </tr>`).join('') || '<tr><td colspan="6">Номерів немає</td></tr>';
+        $('rooms')._data = rooms;
+    }
+
+    $('rooms').addEventListener('click', run(async (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const room = $('rooms')._data.find(r => r.id === Number(btn.dataset.id));
+        if (btn.dataset.act === 'edit') {
+            const f = $('roomForm');
+            for (const k of ['id', 'roomNumber', 'type', 'capacity', 'pricePerNight']) f[k].value = room[k];
+            $('roomSubmit').textContent = 'Зберегти зміни';
+        } else if (btn.dataset.act === 'delete') {
+            await api('DELETE', '/api/rooms/' + room.id);
+            toast('Номер видалено');
+            await loadRooms();
+        }
+    }));
+
+    function resetRoomForm() {
+        $('roomForm').reset();
+        $('roomForm').id.value = '';
+        $('roomSubmit').textContent = 'Додати номер';
+    }
+
+    $('roomForm').addEventListener('submit', run(async (e) => {
+        e.preventDefault();
+        if (!selectedHotel) throw new Error('Спершу оберіть готель');
+        const {id, ...data} = formData(e.target);
+        data.capacity = Number(data.capacity);
+        data.pricePerNight = Number(data.pricePerNight);
+        if (id) {
+            await api('PUT', '/api/rooms/' + id, data);
+            toast('Номер оновлено');
+        } else {
+            await api('POST', `/api/hotels/${selectedHotel.id}/rooms`, data);
+            toast('Номер створено');
+        }
+        resetRoomForm();
+        await loadRooms();
+    }));
+    $('roomReset').addEventListener('click', resetRoomForm);
+
+    // ---------- search & booking ----------
+    let lastSearch = null;
+
+    $('searchForm').addEventListener('submit', run(async (e) => {
+        e.preventDefault();
+        lastSearch = formData(e.target);
+        await loadAvailable();
+    }));
+
+    async function loadAvailable() {
+        if (!lastSearch) return;
+        const q = new URLSearchParams(lastSearch);
+        const rooms = await api('GET', '/api/rooms/available?' + q);
+        $('available').innerHTML = rooms.map(r => `
+            <tr>
+                <td>${esc(r.hotelName)}</td><td>${esc(r.roomNumber)}</td><td>${r.type}</td><td>${r.capacity}</td><td>${r.pricePerNight}</td>
+                <td><button class="primary" data-id="${r.id}">Забронювати</button></td>
+            </tr>`).join('') || '<tr><td colspan="6">Вільних номерів немає</td></tr>';
+    }
+
+    $('available').addEventListener('click', run(async (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const b = await api('POST', '/api/bookings', {
+            roomId: Number(btn.dataset.id),
+            checkIn: lastSearch.checkIn,
+            checkOut: lastSearch.checkOut,
+            guestsCount: Number(lastSearch.guests)
+        });
+        toast(`Бронювання #${b.id} створено, сума ${b.totalPrice}`);
+        await Promise.all([loadAvailable(), loadMyBookings(), loadAdmin()]);
+    }));
+
+    // ---------- bookings ----------
+    const statusBadge = (s) => `<span class="badge ${s}">${s}</span>`;
+
+    async function loadMyBookings() {
+        const list = await api('GET', '/api/bookings/my');
+        $('myBookings').innerHTML = list.map(b => `
+            <tr>
+                <td>${b.id}</td><td>${esc(b.hotelName)}</td><td>${esc(b.roomNumber)}</td>
+                <td>${b.checkIn} → ${b.checkOut}</td><td>${b.guestsCount}</td><td>${b.totalPrice}</td>
+                <td>${statusBadge(b.status)}</td>
+                <td>${b.status !== 'CANCELLED' ? `<button class="danger" data-act="cancel" data-id="${b.id}">Скасувати</button>` : ''}</td>
+            </tr>`).join('') || '<tr><td colspan="8">Бронювань ще немає</td></tr>';
+    }
+
+    async function loadAdmin() {
+        if (!isAdmin()) return;
+        const [list, stats] = await Promise.all([api('GET', '/api/bookings'), api('GET', '/api/admin/stats')]);
+        $('stats').textContent = `Готелів: ${stats.hotels}, номерів: ${stats.rooms}, бронювань: `
+            + Object.entries(stats.bookingsByStatus).map(([k, v]) => `${k} ${v}`).join(', ');
+        $('allBookings').innerHTML = list.map(b => `
+            <tr>
+                <td>${b.id}</td><td>${esc(b.guestUsername)}</td><td>${esc(b.hotelName)}</td><td>${esc(b.roomNumber)}</td>
+                <td>${b.checkIn} → ${b.checkOut}</td><td>${b.totalPrice}</td><td>${statusBadge(b.status)}</td>
+                <td>
+                    ${b.status === 'PENDING' ? `<button class="primary" data-act="confirm" data-id="${b.id}">Підтвердити</button>` : ''}
+                    ${b.status !== 'CANCELLED' ? `<button data-act="cancel" data-id="${b.id}">Скасувати</button>` : ''}
+                    <button class="danger" data-act="delete" data-id="${b.id}">Видалити</button>
+                </td>
+            </tr>`).join('') || '<tr><td colspan="8">Бронювань немає</td></tr>';
+    }
+
+    const bookingActions = run(async (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        if (btn.dataset.act === 'cancel') await api('PATCH', `/api/bookings/${id}/cancel`);
+        if (btn.dataset.act === 'confirm') await api('PATCH', `/api/bookings/${id}/confirm`);
+        if (btn.dataset.act === 'delete') await api('DELETE', `/api/bookings/${id}`);
+        toast('Готово');
+        await Promise.all([loadMyBookings(), loadAdmin(), loadAvailable()]);
+    });
+    $('myBookings').addEventListener('click', bookingActions);
+    $('allBookings').addEventListener('click', bookingActions);
+
+    // ---------- init ----------
+    (async () => {
+        const today = new Date();
+        const iso = (d) => d.toISOString().slice(0, 10);
+        $('searchForm').checkIn.value = iso(new Date(today.getTime() + 86400000));
+        $('searchForm').checkOut.value = iso(new Date(today.getTime() + 3 * 86400000));
+        await run(async () => {
+            await ensureToken();
+            await Promise.all([loadHotels(), loadMyBookings(), loadAdmin()]);
+        })();
+    })();
+</script>
+</body>
+</html>

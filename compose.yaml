@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: docker.io/library/postgres:17
+    environment:
+      POSTGRES_DB: hotel_booking
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: appuser
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./keycloak/hotel-realm.json:/opt/keycloak/data/import/hotel-realm.json:ro,Z
+
+volumes:
+  pgdata:

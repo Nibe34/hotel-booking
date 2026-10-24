@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001-create-hotels-table" author="student">
+        <createTable tableName="hotels">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="city" type="VARCHAR(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="address" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="stars" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(2000)"/>
+        </createTable>
+
+        <addUniqueConstraint tableName="hotels" columnNames="name, city" constraintName="uq_hotels_name_city"/>
+        <createIndex tableName="hotels" indexName="idx_hotels_city">
+            <column name="city"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
