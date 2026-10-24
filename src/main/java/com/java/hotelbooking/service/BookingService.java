@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -40,6 +41,7 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final RoomRepository roomRepository;
     private final BookingMapper bookingMapper;
+    private final Clock clock;
 
     @Transactional
     @PreAuthorize("hasRole('USER')")
@@ -105,7 +107,7 @@ public class BookingService {
         if (booking.getStatus() == BookingStatus.CANCELLED) {
             throw new ConflictException("Booking " + id + " is already cancelled");
         }
-        if (!isAdmin && !booking.getCheckIn().isAfter(LocalDate.now())) {
+        if (!isAdmin && !booking.getCheckIn().isAfter(LocalDate.now(clock))) {
             throw new ConflictException("Booking can be cancelled only before the check-in date");
         }
         booking.setStatus(BookingStatus.CANCELLED);
