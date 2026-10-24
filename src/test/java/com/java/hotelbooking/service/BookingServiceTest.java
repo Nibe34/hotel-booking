@@ -425,6 +425,41 @@ class BookingServiceTest {
                 .hasMessage("Booking with id 8 not found");
     }
 
+    // ---------- confirmBatch ----------
+
+    @Test
+    void confirmBatch_confirmsEveryBookingInOrder() {
+        Booking first = booking(1L, GUEST, BookingStatus.PENDING, TODAY.plusDays(5));
+        Booking second = booking(2L, "alice", BookingStatus.PENDING, TODAY.plusDays(6));
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(first));
+        when(bookingRepository.findById(2L)).thenReturn(Optional.of(second));
+        mapperEchoesEntity();
+
+        List<BookingResponse> result = bookingService.confirmBatch(List.of(1L, 2L));
+
+        assertThat(result).extracting(BookingResponse::id).containsExactly(1L, 2L);
+        assertThat(first.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+        assertThat(second.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+    }
+
+    @Test
+    void confirmBatch_notPendingBookingInBatch_throwsConflict() {
+        Booking pending = booking(1L, GUEST, BookingStatus.PENDING, TODAY.plusDays(5));
+        Booking cancelled = booking(2L, GUEST, BookingStatus.CANCELLED, TODAY.plusDays(5));
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(pending));
+        when(bookingRepository.findById(2L)).thenReturn(Optional.of(cancelled));
+        mapperEchoesEntity();
+
+        assertThatThrownBy(() -> bookingService.confirmBatch(List.of(1L, 2L)))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("CANCELLED");
+    }
+
+    @Test
+    void confirmBatch_emptyList_returnsEmptyList() {
+        assertThat(bookingService.confirmBatch(List.of())).isEmpty();
+    }
+
     // ---------- delete ----------
 
     @Test

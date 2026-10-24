@@ -89,6 +89,14 @@ class BookingControllerTest {
     }
 
     @Test
+    void confirmBatch_delegatesIdsToService() {
+        List<BookingResponse> expected = List.of(response(1L), response(2L));
+        when(bookingService.confirmBatch(List.of(1L, 2L))).thenReturn(expected);
+
+        assertThat(controller.confirmBatch(List.of(1L, 2L))).isSameAs(expected);
+    }
+
+    @Test
     void delete_delegatesIdToService() {
         controller.delete(5L);
 

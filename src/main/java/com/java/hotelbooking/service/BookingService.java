@@ -1,7 +1,10 @@
 package com.java.hotelbooking.service;
 
+import com.java.hotelbooking.domain.annotation.AuditBooking;
+import com.java.hotelbooking.domain.annotation.RateLimited;
 import com.java.hotelbooking.domain.dto.BookingCreateRequest;
 import com.java.hotelbooking.domain.dto.BookingResponse;
+import com.java.hotelbooking.domain.enums.AuditAction;
 import com.java.hotelbooking.domain.enums.BookingStatus;
 import com.java.hotelbooking.domain.mapper.BookingMapper;
 import com.java.hotelbooking.domain.model.Booking;
@@ -23,6 +26,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -45,6 +49,8 @@ public class BookingService {
 
     @Transactional
     @PreAuthorize("hasRole('USER')")
+    @RateLimited(permits = 10, perSeconds = 60)
+    @AuditBooking(AuditAction.CREATE)
     public BookingResponse create(BookingCreateRequest request, String username) {
         long nights = ChronoUnit.DAYS.between(request.checkIn(), request.checkOut());
         if (nights <= 0) {
@@ -97,6 +103,7 @@ public class BookingService {
 
     @Transactional
     @PreAuthorize("isAuthenticated()")
+    @AuditBooking(AuditAction.CANCEL)
     public BookingResponse cancel(Long id, Authentication authentication) {
         Booking booking = findBooking(id);
         boolean isAdmin = authentication.getAuthorities().stream()
@@ -116,6 +123,7 @@ public class BookingService {
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
+    @AuditBooking(AuditAction.CONFIRM)
     public BookingResponse confirm(Long id) {
         Booking booking = findBooking(id);
         if (booking.getStatus() != BookingStatus.PENDING) {
@@ -124,6 +132,22 @@ public class BookingService {
         }
         booking.setStatus(BookingStatus.CONFIRMED);
         return bookingMapper.toResponse(booking);
+    }
+
+    /**
+     * Self-invocation demo (Lab 4), kept on purpose. {@code this.confirm(id)} calls the target object directly,
+     * not the Spring proxy, so the advice on {@link #confirm(Long)} never runs: bookings confirmed here get
+     * no audit rows (and the method-level @PreAuthorize of confirm is skipped too - this method has its own).
+     * Confirming the same bookings one by one via the proxy (PATCH /api/bookings/{id}/confirm) is audited.
+     */
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<BookingResponse> confirmBatch(List<Long> ids) {
+        List<BookingResponse> confirmed = new ArrayList<>();
+        for (Long id : ids) {
+            confirmed.add(this.confirm(id));
+        }
+        return confirmed;
     }
 
     @Transactional
