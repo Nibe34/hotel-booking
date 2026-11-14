@@ -1,0 +1,30 @@
+meta {
+  name: exceptionally - невідома валюта
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{app}}/api/bookings/{{b5}}/invoice?currency=XYZ
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{bobToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+
+  test("fallback: invoice without conversion, with a note", function () {
+    expect(res.body.convertedTotal).to.not.exist;
+    expect(res.body.note).to.contain("not available");
+  });
+}
+
+docs {
+  Асинхронний виклик курсу впав, але запит не впав: exceptionally дав запасний результат.
+}

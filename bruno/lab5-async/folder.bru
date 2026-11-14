@@ -1,0 +1,13 @@
+meta {
+  name: Lab 5 - Async
+  seq: 5
+}
+
+docs {
+  Лист гостю - fire-and-forget (@Async void, GuestNotifier).
+  Рахунок (~1 с) і курс валют (~0.7 с) - два @Async CompletableFuture, об'єднані thenCombine (BookingDocumentService).
+  Помилка курсу -> exceptionally -> рахунок без конвертації.
+
+  Під час демонстрації показуй лог застосунку: там видно потоки hotel-async-N.
+  Перевантаження (503 замість 500) показується скриптом http/lab5-async-demo.sh - 40 паралельних запитів.
+}

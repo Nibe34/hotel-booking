@@ -1,0 +1,52 @@
+meta {
+  name: Fire-and-forget - бронювання не чекає листа
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{app}}/api/bookings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{bobToken}}
+}
+
+body:json {
+  {
+    "roomId": {{roomId}},
+    "checkIn": "2030-07-01",
+    "checkOut": "2030-07-04",
+    "guestsCount": 2
+  }
+}
+
+script:pre-request {
+  // попередні лаби лишили в черзі пулу ~15 листів по ~1 с; даємо їм розійтися
+  await bru.sleep(5000);
+}
+
+script:post-response {
+  bru.setVar("b5", res.body.id);
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.status).to.equal(201);
+  });
+
+  test("answered before the ~1 s e-mail is sent", function () {
+    expect(res.getResponseTime()).to.be.below(800);
+  });
+}
+
+docs {
+  Відправка листа триває ~1 с, але відповідь приходить швидше: лист надсилається після коміту
+  в потоці hotel-async-N (дивись лог: «Mail sent to bob ...» на потоці hotel-async-N).
+
+  Перед запитом є пауза 5 с. Кожна зміна бронювання в Lab 1-4 відправила лист (~1 с) у той самий
+  обмежений пул (4 потоки). Без паузи рахунок і курс валют стали б у чергу за ними, і курс не встиг би
+  за свій таймаут 1.5 с - це теж демонстрація обмеженого пулу, але не та, яку тут треба показати.
+}
