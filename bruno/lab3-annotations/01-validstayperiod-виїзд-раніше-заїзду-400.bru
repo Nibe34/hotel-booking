@@ -1,0 +1,38 @@
+meta {
+  name: ValidStayPeriod - виїзд раніше заїзду - 400
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{app}}/api/bookings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{bobToken}}
+}
+
+body:json {
+  {
+    "roomId": {{roomId}},
+    "checkIn": "2030-02-10",
+    "checkOut": "2030-02-05",
+    "guestsCount": 1
+  }
+}
+
+tests {
+  test("status 400", function () {
+    expect(res.status).to.equal(400);
+  });
+
+  test("explains what is wrong, on checkOut", function () {
+    expect(res.body.fieldErrors.checkOut).to.contain("must be after checkIn (2030-02-10)");
+  });
+}
+
+docs {
+  Повідомлення називає конкретні дати, а не «invalid». Порушення прив'язане до поля checkOut.
+}

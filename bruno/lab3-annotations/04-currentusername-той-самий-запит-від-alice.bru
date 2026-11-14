@@ -1,0 +1,38 @@
+meta {
+  name: CurrentUsername - той самий запит від alice
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{app}}/api/bookings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+body:json {
+  {
+    "roomId": {{roomId}},
+    "checkIn": "2030-02-10",
+    "checkOut": "2030-02-12",
+    "guestsCount": 1
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.status).to.equal(201);
+  });
+
+  test("guest is the caller (alice)", function () {
+    expect(res.body.guestUsername).to.equal("alice");
+  });
+}
+
+docs {
+  Той самий ендпоінт, інший токен - інше ім'я. Значення реально використовується в методі.
+}

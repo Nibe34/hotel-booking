@@ -1,0 +1,39 @@
+meta {
+  name: PostCreated + CurrentUsername - bob - 201
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{app}}/api/bookings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{bobToken}}
+}
+
+body:json {
+  {
+    "roomId": {{roomId}},
+    "checkIn": "2030-02-01",
+    "checkOut": "2030-02-03",
+    "guestsCount": 1
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.status).to.equal(201);
+  });
+
+  test("guest is the caller (bob)", function () {
+    expect(res.body.guestUsername).to.equal("bob");
+  });
+}
+
+docs {
+  201 замість 200 - заслуга @PostCreated на BookingController.create.
+  guestUsername ніхто не передавав у тілі: його підставив @CurrentUsername з токена.
+}
