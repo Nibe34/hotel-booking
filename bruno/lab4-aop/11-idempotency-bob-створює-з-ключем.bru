@@ -1,0 +1,42 @@
+meta {
+  name: Idempotency - bob створює з ключем
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{app}}/api/bookings
+  body: json
+  auth: bearer
+}
+
+headers {
+  Idempotency-Key: {{idemKey}}
+}
+
+auth:bearer {
+  token: {{bobToken}}
+}
+
+body:json {
+  {
+    "roomId": {{roomId}},
+    "checkIn": "2030-06-10",
+    "checkOut": "2030-06-12",
+    "guestsCount": 1
+  }
+}
+
+script:pre-request {
+  bru.setVar("idemKey", "demo-" + Date.now());
+}
+
+script:post-response {
+  bru.setVar("idemId", res.body.id);
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.status).to.equal(201);
+  });
+}

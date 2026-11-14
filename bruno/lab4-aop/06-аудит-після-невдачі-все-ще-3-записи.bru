@@ -1,0 +1,25 @@
+meta {
+  name: Аудит - після невдачі все ще 3 записи
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{app}}/api/admin/audit?bookingId={{b1}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+
+  test("failed call is not audited", function () {
+    expect(res.body.length).to.equal(3);
+  });
+}

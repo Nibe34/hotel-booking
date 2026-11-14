@@ -1,0 +1,14 @@
+meta {
+  name: Lab 4 - AOP
+  seq: 4
+}
+
+docs {
+  @AuditBooking (@AfterReturning) - журнал змін бронювань у таблиці booking_audit.
+  @Idempotent (@Around) - заголовок Idempotency-Key, повтор повертає збережену відповідь без proceed().
+  @RateLimited (@Before) - не більше 10 спроб створити бронювання за хвилину на користувача -> 429.
+  Self-invocation: confirmBatch викликає this.confirm(id) - аудит мовчки не пишеться.
+
+  Код: domain/annotation/*, aspect/*, BookingService.confirmBatch.
+  Ліміт рахує спроби bob за останню хвилину, тому якщо щойно запускався demo.sh - зачекай хвилину.
+}

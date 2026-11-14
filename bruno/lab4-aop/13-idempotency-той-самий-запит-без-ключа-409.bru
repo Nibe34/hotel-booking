@@ -1,0 +1,30 @@
+meta {
+  name: Idempotency - той самий запит без ключа - 409
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{app}}/api/bookings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{bobToken}}
+}
+
+body:json {
+  {
+    "roomId": {{roomId}},
+    "checkIn": "2030-06-10",
+    "checkOut": "2030-06-12",
+    "guestsCount": 1
+  }
+}
+
+tests {
+  test("a real second attempt -> 409 (or 429 if the limit is already used up)", function () {
+    expect([409, 429]).to.include(res.status);
+  });
+}

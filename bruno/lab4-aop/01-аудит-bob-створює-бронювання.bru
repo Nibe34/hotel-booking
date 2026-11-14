@@ -1,0 +1,34 @@
+meta {
+  name: Аудит - bob створює бронювання
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{app}}/api/bookings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{bobToken}}
+}
+
+body:json {
+  {
+    "roomId": {{roomId}},
+    "checkIn": "2030-03-10",
+    "checkOut": "2030-03-12",
+    "guestsCount": 1
+  }
+}
+
+script:post-response {
+  bru.setVar("b1", res.body.id);
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.status).to.equal(201);
+  });
+}

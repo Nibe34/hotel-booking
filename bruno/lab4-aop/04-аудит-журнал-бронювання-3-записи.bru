@@ -1,0 +1,30 @@
+meta {
+  name: Аудит - журнал бронювання - 3 записи
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{app}}/api/admin/audit?bookingId={{b1}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+
+  test("CREATE by bob, CONFIRM by alice, CANCEL by bob", function () {
+    expect(res.body.map(e => e.action)).to.eql(["CREATE", "CONFIRM", "CANCEL"]);
+    expect(res.body.map(e => e.actor)).to.eql(["bob", "alice", "bob"]);
+  });
+}
+
+docs {
+  Кожен виклик через Spring-проксі запустив advice @AfterReturning.
+}

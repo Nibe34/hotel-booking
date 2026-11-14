@@ -1,0 +1,30 @@
+meta {
+  name: Self-invocation - журнал B2 - CONFIRM немає
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{app}}/api/admin/audit?bookingId={{b2}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+
+  test("only CREATE - the advice did not run", function () {
+    expect(res.body.map(e => e.action)).to.eql(["CREATE"]);
+  });
+}
+
+docs {
+  ...а аудиту CONFIRM немає, і жодної помилки. this.confirm() йде повз проксі,
+  тому аспект не бачить виклику. Порівняй з B1 вище: там confirm викликався ззовні й аудитувався.
+}

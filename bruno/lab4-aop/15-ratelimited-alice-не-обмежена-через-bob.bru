@@ -1,0 +1,34 @@
+meta {
+  name: RateLimited - alice не обмежена через bob
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{app}}/api/bookings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+body:json {
+  {
+    "roomId": {{roomId}},
+    "checkIn": "2030-06-20",
+    "checkOut": "2030-06-22",
+    "guestsCount": 1
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.status).to.equal(201);
+  });
+}
+
+docs {
+  Ліміт рахується окремо для кожного користувача.
+}

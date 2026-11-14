@@ -1,0 +1,42 @@
+meta {
+  name: RateLimited - тисни Send, поки не буде 429
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{app}}/api/bookings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{bobToken}}
+}
+
+body:json {
+  {
+    "roomId": {{roomId}},
+    "checkIn": "2030-06-10",
+    "checkOut": "2030-06-12",
+    "guestsCount": 1
+  }
+}
+
+tests {
+  test("409 while within the limit, then 429", function () {
+    expect([409, 429]).to.include(res.status);
+  });
+
+  test("429 carries Retry-After", function () {
+    if (res.status === 429) {
+      expect(res.headers["retry-after"]).to.exist;
+    }
+  });
+}
+
+docs {
+  Натискай Send (Ctrl+Enter) кілька разів: спершу 409 (дати зайняті), потім 429 Too Many Requests
+  із заголовком Retry-After. Кожна спроба рахується, навіть невдала - інакше ліміт обходився б перебором.
+  Через хвилину bob знову може бронювати.
+}

@@ -1,0 +1,33 @@
+meta {
+  name: Self-invocation - alice confirm-batch
+  type: http
+  seq: 9
+}
+
+patch {
+  url: {{app}}/api/bookings/confirm-batch
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+body:json {
+  [{{b2}}, {{b3}}]
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+
+  test("both CONFIRMED", function () {
+    expect(res.body.map(b => b.status)).to.eql(["CONFIRMED", "CONFIRMED"]);
+  });
+}
+
+docs {
+  confirmBatch у циклі викликає this.confirm(id). Бізнес-логіка confirm спрацювала...
+}

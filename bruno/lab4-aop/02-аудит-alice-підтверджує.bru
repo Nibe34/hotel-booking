@@ -1,0 +1,21 @@
+meta {
+  name: Аудит - alice підтверджує
+  type: http
+  seq: 2
+}
+
+patch {
+  url: {{app}}/api/bookings/{{b1}}/confirm
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+}
