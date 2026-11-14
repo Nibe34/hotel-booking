@@ -1,0 +1,21 @@
+meta {
+  name: AC7 - alice - всі бронювання - 200
+  type: http
+  seq: 21
+}
+
+get {
+  url: {{app}}/api/bookings
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+}

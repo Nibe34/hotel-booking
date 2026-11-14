@@ -1,0 +1,21 @@
+meta {
+  name: Фільтр за містом
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{app}}/api/hotels?city=Kyiv
+  body: none
+  auth: none
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+
+  test("only Kyiv", function () {
+    res.body.forEach(h => expect(h.city).to.equal("Kyiv"));
+  });
+}

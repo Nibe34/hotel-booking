@@ -1,0 +1,39 @@
+meta {
+  name: bob бронює демо-номер на 3 ночі
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{app}}/api/bookings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{bobToken}}
+}
+
+body:json {
+  {
+    "roomId": {{roomId}},
+    "checkIn": "2030-01-10",
+    "checkOut": "2030-01-13",
+    "guestsCount": 2
+  }
+}
+
+script:post-response {
+  bru.setVar("bookingId", res.body.id);
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.status).to.equal(201);
+  });
+
+  test("PENDING, price = 3 nights x 1000", function () {
+    expect(res.body.status).to.equal("PENDING");
+    expect(res.body.totalPrice).to.equal(3000);
+  });
+}

@@ -1,0 +1,21 @@
+meta {
+  name: alice видаляє бронювання - 204
+  type: http
+  seq: 26
+}
+
+delete {
+  url: {{app}}/api/bookings/{{bookingId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.status).to.equal(204);
+  });
+}

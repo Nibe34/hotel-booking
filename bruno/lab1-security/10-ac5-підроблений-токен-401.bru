@@ -1,0 +1,25 @@
+meta {
+  name: AC5 - підроблений токен - 401
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{app}}/api/bookings/my
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: not-a-real-token
+}
+
+tests {
+  test("status 401", function () {
+    expect(res.status).to.equal(401);
+  });
+}
+
+docs {
+  Підпис токена перевіряється за ключами Keycloak (JWKS).
+}

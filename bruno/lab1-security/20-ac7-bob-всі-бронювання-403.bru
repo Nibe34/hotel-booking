@@ -1,0 +1,26 @@
+meta {
+  name: AC7 - bob - всі бронювання - 403
+  type: http
+  seq: 20
+}
+
+get {
+  url: {{app}}/api/bookings
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{bobToken}}
+}
+
+tests {
+  test("status 403", function () {
+    expect(res.status).to.equal(403);
+  });
+}
+
+docs {
+  Фільтр для /api/bookings/** вимагає лише автентифікації, тож bob його проходить.
+  Блокує @PreAuthorize("hasRole('ADMIN')") на BookingService.listAll -> AccessDeniedException -> 403.
+}

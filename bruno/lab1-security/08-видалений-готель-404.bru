@@ -1,0 +1,17 @@
+meta {
+  name: Видалений готель - 404
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{app}}/api/hotels/{{lab1HotelId}}
+  body: none
+  auth: none
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.status).to.equal(404);
+  });
+}

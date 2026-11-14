@@ -1,0 +1,21 @@
+meta {
+  name: Видалити демо-готель
+  type: http
+  seq: 1
+}
+
+delete {
+  url: {{app}}/api/hotels/{{hotelId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.status).to.equal(204);
+  });
+}

@@ -1,0 +1,21 @@
+meta {
+  name: AC6 - alice - admin stats - 200
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{app}}/api/admin/stats
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+}

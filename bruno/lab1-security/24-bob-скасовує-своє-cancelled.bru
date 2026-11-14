@@ -1,0 +1,25 @@
+meta {
+  name: bob скасовує своє - CANCELLED
+  type: http
+  seq: 24
+}
+
+patch {
+  url: {{app}}/api/bookings/{{bookingId}}/cancel
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{bobToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+
+  test("CANCELLED", function () {
+    expect(res.body.status).to.equal("CANCELLED");
+  });
+}

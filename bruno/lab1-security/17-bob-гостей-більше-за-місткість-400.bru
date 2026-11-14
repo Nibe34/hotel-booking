@@ -1,0 +1,30 @@
+meta {
+  name: bob - гостей більше за місткість - 400
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{app}}/api/bookings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{bobToken}}
+}
+
+body:json {
+  {
+    "roomId": {{roomId}},
+    "checkIn": "2030-01-20",
+    "checkOut": "2030-01-21",
+    "guestsCount": 3
+  }
+}
+
+tests {
+  test("status 400", function () {
+    expect(res.status).to.equal(400);
+  });
+}

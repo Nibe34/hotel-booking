@@ -1,0 +1,25 @@
+meta {
+  name: bob - своє бронювання за id (PostAuthorize)
+  type: http
+  seq: 19
+}
+
+get {
+  url: {{app}}/api/bookings/{{bookingId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{bobToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+}
+
+docs {
+  @PostAuthorize: власник або ADMIN.
+}

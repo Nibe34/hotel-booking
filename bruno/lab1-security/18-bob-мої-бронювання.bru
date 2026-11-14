@@ -1,0 +1,25 @@
+meta {
+  name: bob - мої бронювання
+  type: http
+  seq: 18
+}
+
+get {
+  url: {{app}}/api/bookings/my
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{bobToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+
+  test("contains the new booking", function () {
+    expect(res.body.map(b => b.id)).to.include(bru.getVar("bookingId"));
+  });
+}

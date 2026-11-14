@@ -1,0 +1,21 @@
+meta {
+  name: Список готелів - публічно
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{app}}/api/hotels
+  body: none
+  auth: none
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+}
+
+docs {
+  GET /api/hotels/** відкритий у SecurityFilterChain (permitAll), токен не потрібен.
+}

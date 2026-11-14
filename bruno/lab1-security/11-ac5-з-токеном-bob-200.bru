@@ -1,0 +1,25 @@
+meta {
+  name: AC5 - з токеном bob - 200
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{app}}/api/bookings/my
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{bobToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+}
+
+docs {
+  Жодної сесії чи UI: лише JWT у заголовку.
+}

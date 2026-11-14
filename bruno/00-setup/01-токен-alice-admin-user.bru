@@ -1,0 +1,32 @@
+meta {
+  name: Токен alice (ADMIN, USER)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{kc}}/protocol/openid-connect/token
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  grant_type: password
+  client_id: hotel-app
+  username: alice
+  password: alice123
+}
+
+script:post-response {
+  bru.setVar("aliceToken", res.body.access_token);
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+}
+
+docs {
+  Password grant у Keycloak. Токен зберігається у змінну `aliceToken`.
+}

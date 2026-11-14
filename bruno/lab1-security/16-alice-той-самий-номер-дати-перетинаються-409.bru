@@ -1,0 +1,30 @@
+meta {
+  name: alice - той самий номер, дати перетинаються - 409
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{app}}/api/bookings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+body:json {
+  {
+    "roomId": {{roomId}},
+    "checkIn": "2030-01-12",
+    "checkOut": "2030-01-15",
+    "guestsCount": 1
+  }
+}
+
+tests {
+  test("status 409", function () {
+    expect(res.status).to.equal(409);
+  });
+}

@@ -1,0 +1,35 @@
+meta {
+  name: Невалідний готель - 400
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{app}}/api/hotels
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+body:json {
+  {
+    "name": "",
+    "city": "Kyiv",
+    "address": "x",
+    "stars": 9
+  }
+}
+
+tests {
+  test("status 400", function () {
+    expect(res.status).to.equal(400);
+  });
+
+  test("field errors", function () {
+    expect(res.body.fieldErrors).to.have.property("name");
+    expect(res.body.fieldErrors).to.have.property("stars");
+  });
+}

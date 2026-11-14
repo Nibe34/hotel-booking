@@ -1,0 +1,38 @@
+meta {
+  name: Демо-готель
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{app}}/api/hotels
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+body:json {
+  {
+    "name": "Demo {{runId}}",
+    "city": "Lviv",
+    "address": "Rynok 1",
+    "stars": 4
+  }
+}
+
+script:pre-request {
+  bru.setVar("runId", String(Date.now()).slice(-6));
+}
+
+script:post-response {
+  bru.setVar("hotelId", res.body.id);
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.status).to.equal(201);
+  });
+}

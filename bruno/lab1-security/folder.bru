@@ -1,0 +1,14 @@
+meta {
+  name: Lab 1 - Spring Security
+  seq: 2
+}
+
+docs {
+  AC1 CRUD, AC5 JWT, AC6 SecurityFilterChain, AC7 @PreAuthorize.
+
+  AC4 (OIDC) показується в браузері, не тут:
+  http://localhost:8081 -> «Увійти через Keycloak» -> логін alice / alice123 -> UI з CRUD.
+  http://localhost:8081/logout виходить і з застосунку, і з Keycloak.
+
+  Код: configuration/SecurityConfig (два ланцюги), service/BookingService (@PreAuthorize / @PostAuthorize).
+}

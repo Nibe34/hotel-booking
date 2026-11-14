@@ -1,0 +1,32 @@
+meta {
+  name: Токен bob (USER)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{kc}}/protocol/openid-connect/token
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  grant_type: password
+  client_id: hotel-app
+  username: bob
+  password: bob123
+}
+
+script:post-response {
+  bru.setVar("bobToken", res.body.access_token);
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+}
+
+docs {
+  Токен зберігається у змінну `bobToken`.
+}

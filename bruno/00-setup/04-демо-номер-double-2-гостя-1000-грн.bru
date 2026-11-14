@@ -1,0 +1,34 @@
+meta {
+  name: Демо-номер (DOUBLE, 2 гостя, 1000 грн)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{app}}/api/hotels/{{hotelId}}/rooms
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+body:json {
+  {
+    "roomNumber": "1",
+    "type": "DOUBLE",
+    "capacity": 2,
+    "pricePerNight": 1000
+  }
+}
+
+script:post-response {
+  bru.setVar("roomId", res.body.id);
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.status).to.equal(201);
+  });
+}

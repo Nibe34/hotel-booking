@@ -1,0 +1,34 @@
+meta {
+  name: Дублікат готелю - 409
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{app}}/api/hotels
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+body:json {
+  {
+    "name": "Kharkiv Plaza {{lab1Suffix}}",
+    "city": "Kharkiv",
+    "address": "x",
+    "stars": 3
+  }
+}
+
+tests {
+  test("status 409", function () {
+    expect(res.status).to.equal(409);
+  });
+}
+
+docs {
+  Назва готелю унікальна в межах міста.
+}

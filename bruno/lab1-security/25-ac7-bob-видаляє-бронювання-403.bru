@@ -1,0 +1,21 @@
+meta {
+  name: AC7 - bob видаляє бронювання - 403
+  type: http
+  seq: 25
+}
+
+delete {
+  url: {{app}}/api/bookings/{{bookingId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{bobToken}}
+}
+
+tests {
+  test("status 403", function () {
+    expect(res.status).to.equal(403);
+  });
+}

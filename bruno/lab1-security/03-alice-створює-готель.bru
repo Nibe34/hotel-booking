@@ -1,0 +1,43 @@
+meta {
+  name: alice створює готель
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{app}}/api/hotels
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+body:json {
+  {
+    "name": "Kharkiv Plaza {{lab1Suffix}}",
+    "city": "Kharkiv",
+    "address": "Sumska 1",
+    "stars": 4,
+    "description": "Business hotel"
+  }
+}
+
+script:pre-request {
+  bru.setVar("lab1Suffix", String(Date.now()).slice(-6));
+}
+
+script:post-response {
+  bru.setVar("lab1HotelId", res.body.id);
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.status).to.equal(201);
+  });
+}
+
+docs {
+  201 Created дає @ResponseStatus(HttpStatus.CREATED) на HotelController.create.
+}

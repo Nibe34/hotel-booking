@@ -1,0 +1,35 @@
+meta {
+  name: alice оновлює готель
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{app}}/api/hotels/{{lab1HotelId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+body:json {
+  {
+    "name": "Kharkiv Plaza {{lab1Suffix}}",
+    "city": "Kharkiv",
+    "address": "Sumska 5",
+    "stars": 5,
+    "description": "Renovated"
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+
+  test("updated", function () {
+    expect(res.body.stars).to.equal(5);
+  });
+}
