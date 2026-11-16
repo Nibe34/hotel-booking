@@ -1,0 +1,26 @@
+meta {
+  name: Ідемпотентність - запустити ще раз
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{app}}/api/admin/jobs/expire-pending
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+tests {
+  test("status 202", function () {
+    expect(res.status).to.equal(202);
+  });
+}
+
+docs {
+  Повторний запуск одразу після першого: скасоване бронювання вже не PENDING, тож завдання нічого не знаходить.
+  У лозі: "0 booking(s) cancelled".
+}

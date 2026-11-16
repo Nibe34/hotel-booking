@@ -1,0 +1,30 @@
+meta {
+  name: Нагадування ще раз - 0 відправлено
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{app}}/api/admin/jobs/check-in-reminders
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+script:pre-request {
+  await bru.sleep(1500);
+}
+
+tests {
+  test("status 202", function () {
+    expect(res.status).to.equal(202);
+  });
+}
+
+docs {
+  Ідемпотентність: факт відправки записаний у booking_reminders (унікальні booking_id + days_before).
+  У лозі: "0 reminder(s) sent".
+}

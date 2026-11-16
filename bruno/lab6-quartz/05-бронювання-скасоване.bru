@@ -1,0 +1,33 @@
+meta {
+  name: Бронювання скасоване - CANCELLED
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{app}}/api/bookings/{{expireBookingId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+script:pre-request {
+  await bru.sleep(1500);
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+
+  test("CANCELLED by the job", function () {
+    expect(res.body.status).to.equal("CANCELLED");
+  });
+}
+
+docs {
+  Пауза 1.5 с перед запитом - дати завданню відпрацювати.
+}

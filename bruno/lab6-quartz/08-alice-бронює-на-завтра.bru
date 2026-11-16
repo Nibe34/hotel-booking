@@ -1,0 +1,38 @@
+meta {
+  name: alice бронює на завтра
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{app}}/api/bookings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+body:json {
+  {
+    "roomId": {{roomId}},
+    "checkIn": "{{tomorrow}}",
+    "checkOut": "{{day2}}",
+    "guestsCount": 1
+  }
+}
+
+script:post-response {
+  bru.setVar("reminderBookingId", res.body.id);
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.status).to.equal(201);
+  });
+}
+
+docs {
+  Кандидат на нагадування за 1 день до заїзду (тільки CONFIRMED).
+}

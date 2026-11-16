@@ -1,0 +1,30 @@
+meta {
+  name: Нагадування з перевизначенням daysBefore=7
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{app}}/api/admin/jobs/check-in-reminders?daysBefore=7
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+script:pre-request {
+  await bru.sleep(1500);
+}
+
+tests {
+  test("status 202", function () {
+    expect(res.status).to.equal(202);
+  });
+}
+
+docs {
+  Значення передається як дані тригера і перемагає значення JobDetail; batchSize і maxRetries лишаються з JobDetail.
+  У лозі: "(daysBefore=7, batchSize=100)".
+}

@@ -1,0 +1,26 @@
+meta {
+  name: Запустити ExpirePendingBookingsJob - 202
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{app}}/api/admin/jobs/expire-pending
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+tests {
+  test("status 202", function () {
+    expect(res.status).to.equal(202);
+  });
+}
+
+docs {
+  scheduler.triggerJob(...) - разовий запуск того самого завдання, що працює кожні 5 хвилин.
+  202 Accepted: завдання виконується в потоці Quartz, не в потоці запиту. У лозі: "ExpirePendingBookingsJob: 1 booking(s) cancelled".
+}

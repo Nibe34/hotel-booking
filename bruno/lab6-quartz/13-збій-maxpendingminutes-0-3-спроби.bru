@@ -1,0 +1,31 @@
+meta {
+  name: Збій - maxPendingMinutes=0 - 3 спроби і стоп
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{app}}/api/admin/jobs/expire-pending?maxPendingMinutes=0
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+script:pre-request {
+  await bru.sleep(1500);
+}
+
+tests {
+  test("status 202", function () {
+    expect(res.status).to.equal(202);
+  });
+}
+
+docs {
+  Сервіс відхиляє невалідний параметр (IllegalArgumentException). JobFailurePolicy: maxRetries=2, тому
+  у лозі "attempt 1 of 3", "attempt 2 of 3" (WARN, повтор) і "attempt 3 of 3 ... giving up until the next scheduled run" (ERROR).
+  Нескінченного циклу немає, застосунок працює далі.
+}

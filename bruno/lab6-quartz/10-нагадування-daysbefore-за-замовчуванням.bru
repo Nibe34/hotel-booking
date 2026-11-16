@@ -1,0 +1,26 @@
+meta {
+  name: Нагадування - daysBefore за замовчуванням (1)
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{app}}/api/admin/jobs/check-in-reminders
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+tests {
+  test("status 202", function () {
+    expect(res.status).to.equal(202);
+  });
+}
+
+docs {
+  Параметрів не передано - діє значення з JobDetail (daysBefore=1).
+  У лозі: "CheckInReminderJob: 1 reminder(s) sent (daysBefore=1 ...)" і за ~1 с "Mail sent to alice" у потоці hotel-async-N.
+}

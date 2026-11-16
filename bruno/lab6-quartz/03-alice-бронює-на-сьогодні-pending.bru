@@ -1,0 +1,61 @@
+meta {
+  name: alice бронює на сьогодні - PENDING
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{app}}/api/bookings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+body:json {
+  {
+    "roomId": {{roomId}},
+    "checkIn": "{{today}}",
+    "checkOut": "{{tomorrow}}",
+    "guestsCount": 1
+  }
+}
+
+script:pre-request {
+  // yyyy-MM-dd in Europe/Kyiv (the app's zone). Plain UTC arithmetic: the script sandbox has no time zone data.
+  // Kyiv is UTC+2, and UTC+3 from the last Sunday of March to the last Sunday of October (01:00 UTC).
+  const lastSunday = (year, month) => {
+    const d = new Date(Date.UTC(year, month + 1, 0, 1));
+    return d.getTime() - d.getUTCDay() * 86400000;
+  };
+  const kyiv = (days) => {
+    const now = Date.now();
+    const year = new Date(now).getUTCFullYear();
+    const summer = now >= lastSunday(year, 2) && now < lastSunday(year, 9);
+    return new Date(now + ((summer ? 3 : 2) * 3600000) + days * 86400000).toISOString().slice(0, 10);
+  };
+  bru.setVar("today", kyiv(0));
+  bru.setVar("tomorrow", kyiv(1));
+  bru.setVar("day2", kyiv(2));
+}
+
+script:post-response {
+  bru.setVar("expireBookingId", res.body.id);
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.status).to.equal(201);
+  });
+
+  test("PENDING", function () {
+    expect(res.body.status).to.equal("PENDING");
+  });
+}
+
+docs {
+  Непідтверджене бронювання, день заїзду якого вже настав - його має скасувати ExpirePendingBookingsJob.
+  Дати рахуються в часовому поясі Europe/Kyiv, як і в застосунку.
+}

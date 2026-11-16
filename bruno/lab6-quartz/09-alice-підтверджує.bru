@@ -1,0 +1,29 @@
+meta {
+  name: alice підтверджує - CONFIRMED
+  type: http
+  seq: 9
+}
+
+patch {
+  url: {{app}}/api/bookings/{{reminderBookingId}}/confirm
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+
+  test("CONFIRMED", function () {
+    expect(res.body.status).to.equal("CONFIRMED");
+  });
+}
+
+docs {
+  Нагадування отримують тільки підтверджені бронювання.
+}

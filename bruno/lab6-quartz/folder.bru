@@ -1,0 +1,12 @@
+meta {
+  name: Lab 6 - Quartz
+  seq: 6
+}
+
+docs {
+  Розклад у БД (QRTZ_* через Liquibase, changeset 006), два завдання в configuration/QuartzConfig:
+  ExpirePendingBookingsJob (1 тригер, кожні 5 хв) і CheckInReminderJob (2 cron-тригери, Europe/Kyiv).
+  Тут завдання запускаються вручну через /api/admin/jobs/* - тримай лог застосунку відкритим, результат видно там.
+
+  Бронювання тут робить alice: bob міг вичерпати ліміт 10/хв у Lab 4.
+}

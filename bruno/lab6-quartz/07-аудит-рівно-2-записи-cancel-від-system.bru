@@ -1,0 +1,38 @@
+meta {
+  name: Аудит - рівно 2 записи, CANCEL від system
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{app}}/api/admin/audit?bookingId={{expireBookingId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+script:pre-request {
+  await bru.sleep(1500);
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+
+  test("CREATE + one CANCEL", function () {
+    expect(res.body.map(e => e.action).sort()).to.eql(["CANCEL", "CREATE"]);
+  });
+
+  test("cancelled by system", function () {
+    expect(res.body.find(e => e.action === "CANCEL").actor).to.equal("system");
+  });
+}
+
+docs {
+  CREATE від alice (аспект Lab 4) і один CANCEL від system (AuditTrail, у фоновому завданні немає користувача).
+  Другий запуск не додав нового запису - доказ ідемпотентності.
+}

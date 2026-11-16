@@ -1,0 +1,41 @@
+meta {
+  name: Розклад з БД - 3 тригери, 2 завдання
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{app}}/api/admin/jobs
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{aliceToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.status).to.equal(200);
+  });
+
+  test("3 triggers in group hotel-booking", function () {
+    expect(res.body.map(t => t.trigger).sort()).to.eql([
+      "hotel-booking.checkInReminderDayBefore",
+      "hotel-booking.checkInReminderWeekBefore",
+      "hotel-booking.expirePendingEvery5Minutes"
+    ]);
+  });
+
+  test("week-before trigger overrides daysBefore", function () {
+    const week = res.body.find(t => t.trigger.endsWith("WeekBefore"));
+    expect(week.job).to.equal("hotel-booking.checkInReminderJob");
+    expect(week.triggerData.daysBefore).to.equal(7);
+  });
+}
+
+docs {
+  Розклад читається з таблиць QRTZ_* (JDBC job store), а не з пам'яті.
+  Тригер тижневого нагадування перевизначає daysBefore=7 і batchSize=500, решта ключів - з JobDetail.
+  Код: configuration/QuartzConfig, service/ScheduledJobsService.
+}
